@@ -28,7 +28,27 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - **Order emails:** tryAutoEmail() POSTs to FormSubmit → hello@pebblevending.com. Activation is
   per-origin (one "Activate Form" click per new domain). Parent Zone rows show "✉️ emailed" on success.
 
+## v2 "realistic town" upgrade (July 11, 2026)
+- Sky dome (gradient sphere + sun glow sprite, both fog:false, follow the player via skyGroup),
+  textured grass/asphalt/sidewalks (canvas textures, RepeatWrapping), gutters + white edge lines,
+  crosswalks + stop bars at the intersection, QT parking stalls + ♿ spot, street lamps ×10,
+  stop sign, fire hydrant, upgraded houses (window frames/sills/shutters, chimneys on #%3==1,
+  foundation strip + bushes + flowers, door frame/knob/step, fascia trim), 3-blob trees with
+  color jitter, flat-bottom clouds, QT ceiling light strips.
+- Living streets: TRAFFIC (3 ambient cars, lane loops, yield-to-Carter, back up politely when
+  blocked >2.2s, soft-bumper push with touch-entry-only speed damping — NEVER damp every frame,
+  that gridlocks the player); BIRDS (3, circling); dust puffs off-road + brake smoke (pooled,
+  20 meshes); speed-FOV kick (60→67); 'skid' sfx.
+- Interactions are now NEAREST-WINS (scanInteract builds candidates, sorts by distance) — the old
+  fixed priority let a parked bike shadow the mailbox/door prompts.
+
 ## Gotchas learned the hard way
+- index.html MUST keep `<meta charset="utf-8">` first in head.html — GitHub Pages sends a charset
+  header but plain `python -m http.server` doesn't, and every emoji/star mojibakes without it.
+- rAF stops in hidden/background tabs — for headless/automation testing use the deterministic
+  stepper: stub `window.requestAnimationFrame=()=>0`, stub `THREE.Clock.prototype.getDelta=()=>1/60`,
+  call `tick()` in a loop, then restore both (window.__step pattern in the 7/11 test transcript).
+  `keys.KeyX=true` + `doInteract()` from page-context eval drive the game fully.
 - GLB vehicle orientation: never trust bounding-box heuristics. The ONLY valid check is a settled
   chase-cam screenshot while driving forward — you must see the vehicle's REAR. VEH_CFG per-model
   {len, flip, rot, noAuto, lift} handles alignment; re-optimizing an asset changes its bbox and can

@@ -207,47 +207,52 @@ function scanInteract(){
     else if(Math.abs(carSpd)<2.5)
       best={label:activeV&&activeV.bike?'🚶 Hop off':'🚶 Hop out',fn:()=>exitCar(false)};
   }else{
-    // packages first
+    // nearest-wins: collect every interaction in range, pick the closest
+    const cand=[];
     for(const b of boxes){
-      if(dist2(px,pz,b.mesh.position.x,b.mesh.position.z)<2.4*2.4){
-        best={label:'📦 Open your package!',fn:()=>openBox(b)};break;
-      }
+      const d=dist2(px,pz,b.mesh.position.x,b.mesh.position.z);
+      if(d<2.4*2.4)cand.push({d:d-2,label:'📦 Open your package!',fn:()=>openBox(b)}); // small bonus: packages matter
     }
-    if(!best){
-      let bv=null,bd=3.3*3.3;
-      for(const v of VEHICLES){
-        const d=dist2(px,pz,v.x,v.z);
-        if(d<bd){bd=d;bv=v;}
-      }
-      if(bv)best={label:bv.bike?'🚲 Ride your bike!':(bv.icon+' Drive the '+bv.label+'!'),fn:()=>enterCar(bv)};
+    for(const v of VEHICLES){
+      const d=dist2(px,pz,v.x,v.z);
+      if(d<3.3*3.3)cand.push({d,label:v.bike?'🚲 Ride your bike!':(v.icon+' Drive the '+v.label+'!'),fn:()=>enterCar(v)});
     }
-    if(!best&&cartCount()>0&&dist2(px,pz,COUNTER_ZONE.x,COUNTER_ZONE.z)<COUNTER_ZONE.r*COUNTER_ZONE.r)
-      best={label:'🧾 Check out with the cashier!',fn:openCheckout};
-    if(!best&&dist2(px,pz,SHELF_ZONE.x,SHELF_ZONE.z)<SHELF_ZONE.r*SHELF_ZONE.r)
-      best={label:'🛒 Grab snacks!',fn:openShop};
-    if(!best&&cartCount()===0&&dist2(px,pz,COUNTER_ZONE.x,COUNTER_ZONE.z)<2.6*2.6)
-      best={label:'🧑‍💼 Talk to the cashier',fn:()=>{
+    if(cartCount()>0){
+      const d=dist2(px,pz,COUNTER_ZONE.x,COUNTER_ZONE.z);
+      if(d<COUNTER_ZONE.r*COUNTER_ZONE.r)cand.push({d,label:'🧾 Check out with the cashier!',fn:openCheckout});
+    }
+    {
+      const d=dist2(px,pz,SHELF_ZONE.x,SHELF_ZONE.z);
+      if(d<SHELF_ZONE.r*SHELF_ZONE.r)cand.push({d,label:'🛒 Grab snacks!',fn:openShop});
+    }
+    if(cartCount()===0){
+      const d=dist2(px,pz,COUNTER_ZONE.x,COUNTER_ZONE.z);
+      if(d<2.6*2.6)cand.push({d,label:'🧑‍💼 Talk to the cashier',fn:()=>{
         sfx('pop');
         if(window._cashier)window._cashier.userData.wave=1.5;
         toast('🧑‍💼 "Howdy Carter! Grab some snacks from the shelves!"');
-      }};
-    if(!best&&dist2(px,pz,dog.position.x,dog.position.z)<2.2*2.2)
-      best={label:'🐶 Pet Buddy',fn:()=>{sfx('bark');dogHop=2.6;burst(dog.position.x,1.2,dog.position.z,10);toast('🐶 Buddy loves you!');}};
-    if(!best){
-      for(const n of NPCS){
-        if(dist2(px,pz,n.mesh.position.x,n.mesh.position.z)<2.4*2.4){
-          best={label:'👋 Say hi to '+n.name,fn:()=>{
-            sfx('pop');n.wave=1.4;
-            toast(n.lines[n.li++%n.lines.length]);
-          }};
-          break;
-        }
-      }
+      }});
     }
-    if(!best&&dist2(px,pz,-54.6,-5.2)<2.2*2.2)
-      best={label:'📬 Check the mail',fn:()=>{sfx('pop');toast(MAIL_LINES[mailI++%MAIL_LINES.length]);}};
-    if(!best&&dist2(px,pz,HOME_DOOR.x,HOME_DOOR.z)<2.6*2.6)
-      best={label:'🚪 Knock',fn:()=>{sfx('pop');toast(DOOR_LINES[doorI++%DOOR_LINES.length]);}};
+    {
+      const d=dist2(px,pz,dog.position.x,dog.position.z);
+      if(d<2.2*2.2)cand.push({d,label:'🐶 Pet Buddy',fn:()=>{sfx('bark');dogHop=2.6;burst(dog.position.x,1.2,dog.position.z,10);toast('🐶 Buddy loves you!');}});
+    }
+    for(const n of NPCS){
+      const d=dist2(px,pz,n.mesh.position.x,n.mesh.position.z);
+      if(d<2.4*2.4)cand.push({d,label:'👋 Say hi to '+n.name,fn:()=>{
+        sfx('pop');n.wave=1.4;
+        toast(n.lines[n.li++%n.lines.length]);
+      }});
+    }
+    {
+      const d=dist2(px,pz,-54.6,-5.2);
+      if(d<2.2*2.2)cand.push({d,label:'📬 Check the mail',fn:()=>{sfx('pop');toast(MAIL_LINES[mailI++%MAIL_LINES.length]);}});
+    }
+    {
+      const d=dist2(px,pz,HOME_DOOR.x,HOME_DOOR.z);
+      if(d<2.6*2.6)cand.push({d,label:'🚪 Knock',fn:()=>{sfx('pop');toast(DOOR_LINES[doorI++%DOOR_LINES.length]);}});
+    }
+    if(cand.length){cand.sort((a,b)=>a.d-b.d);best=cand[0];}
   }
   curInteract=best;
   const p=$('prompt');
@@ -738,6 +743,19 @@ function carUpdate(dt){
   [carX,carZ]=collideCircle(carX,carZ,V.rad);
   if((carX!==ox||carZ!==oz)&&Math.abs(carSpd)>6){sfx('thud');carSpd*=0.6;}
   if(!V.bike&&fuel>0&&Math.abs(carSpd)>0.5)fuel=Math.max(0,fuel-dt*100/420);
+  // dust off-road, smoke on hard braking
+  skidCD-=dt;
+  const braking=(th<0||keys.Space)&&carSpd>0;
+  if(Math.abs(carSpd)>4){
+    puffAcc+=dt;
+    const hard=braking&&carSpd>12;
+    if((!paved||hard)&&puffAcc>0.07){
+      puffAcc=0;
+      const bx=carX-Math.sin(carH)*1.5,bz=carZ-Math.cos(carH)*1.5;
+      spawnPuff(bx,bz,paved);
+    }
+  }
+  if(!V.bike&&braking&&carSpd>13&&skidCD<=0){skidCD=0.9;sfx('skid');}
   V.mesh.position.set(carX,0,carZ);
   V.mesh.rotation.y=carH;
   const W=V.mesh.userData.wheels;
@@ -771,6 +789,105 @@ function carUpdate(dt){
     fb.style.background=fuel>40?'var(--good)':(fuel>18?'#e8a13c':'#d5232a');
     if(fuel<=18&&fuel>0&&Math.random()<dt*0.15)
       toast(V.ev?'⚡ Battery low! Supercharge at QuikTrip!':'⛽ Low fuel! Fill up at QuikTrip!');
+  }
+}
+
+/* ---------------- world life: traffic, birds, dust ---------------- */
+const puffPool=[];let puffI=0,puffAcc=0,skidCD=0;
+for(let i=0;i<20;i++){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(0.16,6,5),
+    new THREE.MeshLambertMaterial({color:0xcbb98f,transparent:true,opacity:0}));
+  m.visible=false;scene.add(m);puffPool.push({m,life:0});
+}
+function spawnPuff(x,z,gray){
+  const p=puffPool[puffI++%puffPool.length];
+  p.life=0.55;p.m.visible=true;
+  p.m.material.color.setHex(gray?0x9a9aa0:0xcbb98f);
+  p.m.position.set(x+(Math.random()-0.5)*0.6,0.24,z+(Math.random()-0.5)*0.6);
+  p.m.scale.setScalar(0.7+Math.random()*0.5);
+  p.m.material.opacity=0.5;
+}
+function puffUpdate(dt){
+  for(const p of puffPool){
+    if(p.life<=0)continue;
+    p.life-=dt;
+    p.m.position.y+=dt*1.1;
+    p.m.scale.multiplyScalar(1+dt*2.2);
+    p.m.material.opacity=Math.max(0,p.life*0.85);
+    if(p.life<=0)p.m.visible=false;
+  }
+}
+let trafficThud=0;
+function trafficUpdate(dt){
+  trafficThud-=dt;
+  const hx=driving?carX:px,hz=driving?carZ:pz;
+  for(let ti=0;ti<TRAFFIC.length;ti++){
+    const c=TRAFFIC[ti];
+    const fx=Math.sin(c.h),fz=Math.cos(c.h);
+    let want=c.max,dx,dz,ah,lat;
+    dx=hx-c.x;dz=hz-c.z;ah=dx*fx+dz*fz;lat=Math.abs(dx*fz-dz*fx);
+    if(ah>-1&&ah<10&&lat<3)want=0;                          // yields to Carter
+    for(const o of TRAFFIC){
+      if(o===c)continue;
+      dx=o.x-c.x;dz=o.z-c.z;ah=dx*fx+dz*fz;lat=Math.abs(dx*fz-dz*fx);
+      if(ah>0&&ah<8&&lat<2.5)want=0;                        // to each other
+    }
+    for(const v of VEHICLES){
+      if(driving&&v===activeV)continue;
+      dx=v.x-c.x;dz=v.z-c.z;ah=dx*fx+dz*fz;lat=Math.abs(dx*fz-dz*fx);
+      if(ah>0&&ah<8&&lat<2.5)want=0;                        // and to parked rides
+    }
+    // blocked by ANYTHING for a while? politely back up, then carry on.
+    // staggered thresholds break intersection deadlocks (one car always moves first)
+    if(want===0&&c.spd<0.2)c.blockT=(c.blockT||0)+dt;
+    else c.blockT=0;
+    let roll=c.spd*dt/0.34;
+    if(c.rev>0){
+      c.rev-=dt;
+      c.x-=fx*2.4*dt;c.z-=fz*2.4*dt;
+      roll=-2.4*dt/0.34;
+    }else{
+      if(c.blockT>2.2+ti*0.8){c.rev=2.4;c.blockT=0;}
+      c.spd+=clamp(want-c.spd,-14*dt,4.5*dt);
+      if(c.spd<0)c.spd=0;
+      c.x+=fx*c.spd*dt;c.z+=fz*c.spd*dt;
+    }
+    if(c.axis==='x'){if(c.dir>0&&c.x>c.hi)c.x=c.lo;if(c.dir<0&&c.x<c.lo)c.x=c.hi;}
+    else{if(c.dir>0&&c.z>c.hi)c.z=c.lo;if(c.dir<0&&c.z<c.lo)c.z=c.hi;}
+    c.m.position.set(c.x,0,c.z);
+    const WL=c.m.userData.wheelList;
+    if(WL)for(let wi=0;wi<WL.length;wi++)WL[wi].rotation.x+=roll;
+    // soft bumper: nudge Carter out instead of overlapping (damp speed on first touch only)
+    const rr=(driving?(activeV?activeV.rad:1.3):0.5)+1.7;
+    const d2v=dist2(c.x,c.z,hx,hz);
+    if(d2v<rr*rr&&d2v>1e-6){
+      const d=Math.sqrt(d2v),pushX=(hx-c.x)/d*(rr-d),pushZ=(hz-c.z)/d*(rr-d);
+      if(driving){
+        carX+=pushX;carZ+=pushZ;
+        if(!c.touch)carSpd*=0.55;
+        [carX,carZ]=collideCircle(carX,carZ,activeV?activeV.rad:1.3);
+        if(activeV)activeV.mesh.position.set(carX,0,carZ);
+        px=carX;pz=carZ;
+      }else{
+        px+=pushX;pz+=pushZ;
+        [px,pz]=collideCircle(px,pz,0.5);
+        avatar.position.set(px,py,pz);
+      }
+      if(!c.touch&&trafficThud<=0&&Math.abs(driving?carSpd:pSpeed)>2){trafficThud=0.8;sfx('thud');sfx('horn');}
+      c.touch=true;
+    }else if(d2v>(rr+0.7)*(rr+0.7))c.touch=false;
+  }
+}
+function birdsUpdate(dt){
+  const t=performance.now()/1000;
+  for(const b of BIRDS){
+    const u=b.userData;
+    u.a+=u.sp*dt;
+    const nx=u.cx+Math.cos(u.a)*u.r,nz=u.cz+Math.sin(u.a)*u.r;
+    b.rotation.y=Math.atan2(nx-b.position.x,nz-b.position.z);
+    b.position.set(nx,u.y+Math.sin(t*0.7+u.r)*1.5,nz);
+    const f=Math.sin(t*9+u.r)*0.55;
+    u.w1.rotation.z=f;u.w2.rotation.z=-f;
   }
 }
 
@@ -956,6 +1073,12 @@ function cameraUpdate(dt){
       m.material.opacity+=(op-m.material.opacity)*Math.min(1,dt*8);
     });
   }
+  // speed widens the view a touch — feels faster without being faster
+  const wantF=60+(driving?Math.min(Math.abs(carSpd),26)/26*7:0);
+  if(Math.abs(camera.fov-wantF)>0.05){
+    camera.fov+=(wantF-camera.fov)*Math.min(1,dt*3);
+    camera.updateProjectionMatrix();
+  }
   const ox=Math.sin(camYaw)*Math.cos(camPitch)*d;
   const oy=Math.sin(camPitch)*d+1.2;
   const oz=Math.cos(camYaw)*Math.cos(camPitch)*d;
@@ -967,6 +1090,7 @@ function envUpdate(dt){
   const hx=driving?carX:px,hz=driving?carZ:pz;
   sun.position.set(hx+45,70,hz+25);
   sun.target.position.set(hx,0,hz);
+  skyGroup.position.set(hx,0,hz);
   clouds.forEach((c,i)=>{
     c.position.x+=dt*(0.7+i*0.13);
     if(c.position.x>190)c.position.x=-190;
@@ -1013,6 +1137,7 @@ function tick(){
     eatUpdate(dt);cartUpdate(dt);npcUpdate(dt);
     ballUpdate(dt);dogUpdate(dt);coinsUpdate(dt);
     vanUpdate(dt);pkgUpdate(dt);confettiUpdate(dt);
+    trafficUpdate(dt);birdsUpdate(dt);puffUpdate(dt);
     scanInteract();objUpdate();
   }
   if(anyModal()&&engine)engineSet(0);
