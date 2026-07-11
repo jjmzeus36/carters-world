@@ -41,15 +41,25 @@ const POIS={
   picnic:{x:-104,z:34,  r:5,  name:'the picnic table',icon:'🧺'},
   heroS: {x:80,  z:56,  r:9,  name:'south Hero Way',icon:'🛣️'},
   hyd:   {x:-14, z:-6.6,r:4,  name:'the fire hydrant',icon:'🚒'},
+  oak:   {x:-72, z:-60, r:11, name:'Oak Lane',       icon:'🌳'},
+  maple: {x:36,  z:60,  r:11, name:'Maple Drive',    icon:'🍁'},
+  lemon: {x:-72, z:-56.5,r:5, name:'the lemonade stand',icon:'🍋'},
+  kite:  {x:-6,  z:-56, r:6,  name:"Sam's kite field",icon:'🪁'},
+  soccer:{x:96,  z:76,  r:7,  name:'the soccer field',icon:'⚽'},
+  balloon:{x:33, z:53,  r:6,  name:'the balloon house',icon:'🎈'},
 };
 const GNOME_SPOTS=[
   [132,-44,'behind the store'],[-136,30,'under a park tree'],[-104,14,'in the pond reeds'],
   [28,-28,'by the trampoline'],[-46,24,'in a south backyard'],[-14,-8.6,'next to the hydrant'],
   [-62,-7,'in the bushes at home'],[86,40,'along Hero Way'],[91,10,'near the stop sign'],
   [-95,-28,'behind the west houses'],
+  [-134,-58,'at the west end of Oak Lane'],[134,58,'at the east end of Maple Drive'],
+  [-74,-54,'behind the lemonade stand'],[12,86,'in a Maple Drive backyard'],
+  [96,70,'near the soccer goal'],
 ];
 const SHINY_SPOTS=[[-51,-13],[104,5.4],[-129,21],[80,28],[128,-14],[-64,30],[16,-27],
-  [-108,38],[97,-17],[-26,-5.4],[48,-38],[120,24]];
+  [-108,38],[97,-17],[-26,-5.4],[48,-38],[120,24],
+  [-100,-58.6],[60,-58.6],[-100,58.6],[60,58.6],[0,44],[8,-70]];
 const PHOTO_SPOTS=[
   {id:'porch', x:-62,  z:-13,  name:'Front Porch',   em:'🏠'},
   {id:'pond',  x:-106, z:15,   name:'Duck Pond',     em:'🦆'},
@@ -59,8 +69,12 @@ const PHOTO_SPOTS=[
   {id:'pumps', x:108,  z:-24,  name:'Gas Pumps',     em:'⛽'},
   {id:'hoop',  x:-51,  z:-13.5,name:'Basketball Hoop',em:'🏀'},
   {id:'hero',  x:80,   z:52,   name:'Hero Way',      em:'🛣️'},
+  {id:'oaksign',x:74.4,z:-57.6, name:'Oak Lane Sign', em:'🌳'},
+  {id:'lemon', x:-70,  z:-54.5, name:'Lemonade Stand',em:'🍋'},
+  {id:'balloon',x:33.5,z:54,    name:'Balloon House', em:'🎈'},
+  {id:'soccer',x:93.5, z:75,    name:'Soccer Goal',   em:'⚽'},
 ];
-const LITTER_SPOTS=[[100,-20],[85,12],[-60,5],[-115,25],[20,-5]];
+const LITTER_SPOTS=[[100,-20],[85,12],[-60,5],[-115,25],[20,-5],[-60,-58.6],[24,58.6],[110,-58.6],[-110,58.6]];
 const BOARD={x:94,z:-10};
 
 /* ---------------- quest catalog ---------------- */
@@ -69,6 +83,9 @@ const RACES={
   race_max:{veh:'bike',from:{x:-120,z:29,r:7},to:{x:86.8,z:6.3,r:8},limit:60,name:'Park → Stop Sign'},
   race_qt: {veh:'car', from:{x:-56,z:-6,r:8}, to:{x:112,z:-28,r:12},limit:35,name:'Home → QuikTrip'},
   race_hero:{veh:'car',from:{x:86.8,z:6.3,r:8},to:{x:80,z:58,r:9},limit:22,name:'Stop Sign → Hero Way'},
+  race_oak: {veh:'bike',from:{x:86.8,z:6.3,r:8},to:{x:-130,z:-64,r:11},limit:60,name:'Stop Sign → Oak Lane West'},
+  race_maple:{veh:'car',from:{x:112,z:-28,r:12},to:{x:130,z:64,r:11},limit:42,name:'QuikTrip → Maple East'},
+  race_tour:{veh:'car',from:{x:-56,z:-6,r:8},to:{x:-130,z:64,r:11},limit:85,name:'Home → Maple West'},
 };
 const QUESTS=[
  /* — Neighborhood Hero arc — */
@@ -106,13 +123,13 @@ const QUESTS=[
  /* — Gnome arc — */
  {id:'gnomes1',icon:'🍄',name:'Gnome Hunt!',giver:'board',req:'hello_town',stars:2,stick:'🍄',
   brief:'Tiny gnomes are hiding in town. Find 3!',
-  steps:[{t:'ev',ev:'gnome',n:3,txt:'Find 3 hidden gnomes'}]},
+  steps:[{t:'count',get:()=>Object.keys(Q.gnome||{}).length,n:3,txt:'Find 3 hidden gnomes'}]},
  {id:'gnomes2',icon:'🎩',name:'More Gnomes!',giver:'board',req:'gnomes1',stars:2,stick:'🎩',
   brief:'They hide behind stores and trees...',
-  steps:[{t:'ev',ev:'gnome',n:3,txt:'Find 3 more gnomes'}]},
+  steps:[{t:'count',get:()=>Object.keys(Q.gnome||{}).length,n:6,txt:'Find 6 gnomes in all'}]},
  {id:'gnomes3',icon:'👑',name:'The Gnome King',giver:'board',req:'gnomes2',stars:4,stick:'👑',badge:'gnome_king',
   brief:'Find them ALL and become Gnome King!',
-  steps:[{t:'ev',ev:'gnome',n:4,txt:'Find the last 4 gnomes'}],
+  steps:[{t:'count',get:()=>Object.keys(Q.gnome||{}).length,n:10,txt:'Find 10 gnomes in all'}],
   onDone:()=>{Q.flags.gnomeBuddy=1;spawnGnomeBuddy();toast('🍄 A gnome friend moved in by your porch!');}},
  /* — Duck arc — */
  {id:'ducks1',icon:'🦆',name:'Duck Detective',giver:'auto',req:'hello_town',stars:2,stick:'🦆',
@@ -220,6 +237,170 @@ const QUESTS=[
    {t:'ev',ev:'drive:bike',n:1,txt:'Ride your bike'}]},
  {id:'charge_up',icon:'🔋',name:'Power Up',giver:'auto',req:'errand_run',stars:1,stick:'🔋',
   brief:'Keep those batteries happy!',steps:[{t:'stat',k:'fuel',n:3,txt:'Charge or fill up 3 times'}]},
+ /* ============ TOWN EXPANSION WAVE (Oak Lane + Maple Drive) ============ */
+ {id:'oak1',icon:'🌳',name:'Welcome to Oak Lane',giver:'auto',req:'errand_run',stars:2,stick:'🌳',
+  brief:'A whole new street opened up!',
+  steps:[
+   {t:'goto',x:-72,z:-60,r:11,txt:'Explore Oak Lane'},
+   {t:'ev',ev:'greet:Mr. Chen',n:1,txt:'Say hi to Mr. Chen',tgt:()=>npcPos('Mr. Chen')},
+   {t:'ev',ev:'greet:Nora',n:1,txt:'Say hi to Nora',tgt:()=>npcPos('Nora')},
+   {t:'ev',ev:'greet:Sam',n:1,txt:'Say hi to Sam',tgt:()=>npcPos('Sam')}]},
+ {id:'oak2',icon:'🏘️',name:'Oak Lane Crew',giver:'auto',req:'oak1',stars:2,stick:'🏘️',
+  brief:'Meet the rest of the block!',
+  steps:[
+   {t:'ev',ev:'greet:Marcus',n:1,txt:'Say hi to Marcus',tgt:()=>npcPos('Marcus')},
+   {t:'ev',ev:'greet:Bella',n:1,txt:'Say hi to Bella',tgt:()=>npcPos('Bella')},
+   {t:'ev',ev:'greet:Ruby',n:1,txt:'Say hi to Ruby',tgt:()=>npcPos('Ruby')},
+   {t:'ev',ev:'greet:Jax',n:1,txt:'Say hi to Jax',tgt:()=>npcPos('Jax')}]},
+ {id:'maple1',icon:'🍁',name:'Maple Drive Meet-Up',giver:'auto',req:'oak2',stars:2,stick:'🍁',
+  brief:'One more street of new friends!',
+  steps:[
+   {t:'goto',x:36,z:60,r:11,txt:'Explore Maple Drive'},
+   {t:'ev',ev:'greet:Mia',n:1,txt:'Say hi to Mia',tgt:()=>npcPos('Mia')},
+   {t:'ev',ev:'greet:Ava',n:1,txt:'Say hi to Ava',tgt:()=>npcPos('Ava')},
+   {t:'ev',ev:'greet:Ben',n:1,txt:'Say hi to Ben',tgt:()=>npcPos('Ben')}]},
+ {id:'maple2',icon:'🤝',name:'The Whole Gang',giver:'auto',req:'maple1',stars:3,stick:'🎊',
+  brief:'Now you know EVERYBODY!',
+  steps:[
+   {t:'ev',ev:'greet:Leo',n:1,txt:'Say hi to Leo',tgt:()=>npcPos('Leo')},
+   {t:'ev',ev:'greet:Eli',n:1,txt:'Say hi to Eli',tgt:()=>npcPos('Eli')},
+   {t:'ev',ev:'greet:Miss Rosa',n:1,txt:'Say hi to Miss Rosa',tgt:()=>npcPos('Miss Rosa')},
+   {t:'ev',ev:'greet:Dr. Kim',n:1,txt:'Say hi to Dr. Kim',tgt:()=>npcPos('Dr. Kim')},
+   {t:'ev',ev:'greet:Coach Danny',n:1,txt:'Say hi to Coach Danny',tgt:()=>npcPos('Coach Danny')}]},
+ {id:'mayor',icon:'🎖️',name:'Mayor of Carter Town',giver:'auto',req:'maple2',stars:4,stick:'🎖️',badge:'mayor',
+  brief:'Everyone in town waves back!',
+  steps:[{t:'stat',k:'greet',n:60,txt:'Say hi 60 times (total)'}]},
+ {id:'lemon1',icon:'🍋',name:'Lemonade Legend',giver:'Zoe',req:'oak1',stars:2,stick:'🍋',
+  brief:'Zoe runs the best stand in town!',
+  steps:[
+   {t:'goto',x:-72,z:-56.5,r:5,txt:'Visit the lemonade stand'},
+   {t:'ev',ev:'greet:Zoe',n:3,txt:'Chat with Zoe 3 times',tgt:()=>npcPos('Zoe')},
+   {t:'linger',x:-72,z:-56.5,r:6,secs:15,txt:'Hang out at the stand 15s'}]},
+ {id:'lemon2',icon:'🧊',name:'Best Customer',giver:'Zoe',req:'lemon1',stars:2,stick:'🧊',
+  brief:'Regulars get extra ice!',
+  steps:[{t:'ev',ev:'visit:lemon',n:3,txt:'Visit the stand 3 times'}]},
+ {id:'feathers1',icon:'🪶',name:'Feather Finder',giver:'board',req:'oak1',stars:2,stick:'🪶',
+  brief:'Soft feathers drift around town...',
+  steps:[{t:'count',get:()=>Object.keys((save.townc||{}).feathers||{}).length,n:4,txt:'Find 4 soft feathers'}]},
+ {id:'feathers2',icon:'🪽',name:'Feather Collector',giver:'board',req:'feathers1',stars:3,stick:'🪽',badge:'feather_friend',
+  brief:'Find every last floaty feather!',
+  steps:[{t:'count',get:()=>Object.keys((save.townc||{}).feathers||{}).length,n:10,txt:'Find all 10 feathers'}]},
+ {id:'chalk1',icon:'⭐',name:'Star Stomper',giver:'Nora',req:'oak1',stars:2,stick:'✏️',
+  brief:'Nora drew magic chalk stars!',
+  steps:[{t:'count',get:()=>Object.keys((save.townc||{}).chalk||{}).length,n:4,txt:'Stomp 4 chalk stars'}]},
+ {id:'chalk2',icon:'💫',name:'Star Sweeper',giver:'Nora',req:'chalk1',stars:3,stick:'💫',badge:'chalk_champ',
+  brief:'Get them ALL, sidewalk hero!',
+  steps:[{t:'count',get:()=>Object.keys((save.townc||{}).chalk||{}).length,n:8,txt:'Stomp all 8 stars'}]},
+ {id:'splash1',icon:'💦',name:'Sprinkler Splash',giver:'auto',req:'oak1',stars:1,stick:'💦',
+  brief:'Nothing beats sprinkler season!',
+  steps:[{t:'ev',ev:'sprinkler',n:3,txt:'Run through the sprinkler 3 times'}]},
+ {id:'hops1',icon:'🦿',name:'Hopscotch Hero',giver:'Nora',req:'oak1',stars:2,stick:'🎯',badge:'hop_master',
+  brief:'Hop the whole board, no misses!',
+  steps:[{t:'ev',ev:'hopscotch',n:8,txt:'Bounce on the hopscotch 8 times'}]},
+ {id:'kite1',icon:'🪁',name:'Rocket the Kite',giver:'Sam',req:'oak1',stars:2,stick:'🪁',
+  brief:'Sam flies the coolest kite ever.',
+  steps:[
+   {t:'goto',x:-6,z:-56,r:6,txt:'Find Sam and Rocket'},
+   {t:'linger',x:-6,z:-56,r:7,secs:15,txt:'Watch Rocket fly for 15s'}]},
+ {id:'soccer1',icon:'⚽',name:'Goal Getter',giver:'Coach Danny',req:'maple1',stars:2,stick:'⚽',
+  brief:'Coach Danny needs a striker!',
+  steps:[
+   {t:'goto',x:96,z:76,r:7,txt:'Visit the soccer field'},
+   {t:'linger',x:96,z:76,r:8,secs:20,txt:'Practice with Coach 20s'}]},
+ {id:'bday1',icon:'🎈',name:'Balloon Party',giver:'Ben',req:'maple1',stars:2,stick:'🎈',
+  brief:'Ben celebrates every single day!',
+  steps:[
+   {t:'linger',x:33,z:53,r:6,secs:10,txt:'Party at the balloon house 10s'},
+   {t:'ev',ev:'photo:balloon',n:1,txt:'Snap a balloon picture',tgt:()=>({x:33.5,z:54})}]},
+ {id:'cookies1',icon:'🍪',name:'Cookie Drop',giver:'board',req:'maple1',stars:2,stick:'🍪',
+  brief:'Deliver welcome cookies to 3 new homes!',
+  steps:[
+   {t:'goto',x:-84,z:-53,r:4,txt:'Cookie stop: Oak Lane west'},
+   {t:'goto',x:12,z:-75,r:4,txt:'Cookie stop: Oak Lane south'},
+   {t:'goto',x:36,z:53,r:4,txt:'Cookie stop: Maple Drive'}]},
+ {id:'cookies2',icon:'🧁',name:'Muffin Run',giver:'board',req:'cookies1',stars:2,stick:'🧁',
+  brief:'Fresh muffins, priority delivery!',
+  steps:[
+   {t:'goto',x:-120,z:-53,r:4,txt:'Muffin stop: far Oak Lane'},
+   {t:'goto',x:60,z:-75,r:4,txt:'Muffin stop: Oak south side'},
+   {t:'goto',x:-60,z:75,r:4,txt:'Muffin stop: Maple south side'}]},
+ {id:'cookies3',icon:'🚚',name:'Snack Express',giver:'board',req:'cookies2',stars:3,stick:'🚚',badge:'delivery_pro',
+  brief:'The whole town knows your knock!',
+  steps:[
+   {t:'goto',x:-132,z:-75,r:5,txt:'Express stop 1'},
+   {t:'goto',x:120,z:-75,r:5,txt:'Express stop 2'},
+   {t:'goto',x:-132,z:53,r:5,txt:'Express stop 3'},
+   {t:'goto',x:132,z:75,r:5,txt:'Express stop 4'}]},
+ {id:'regular1',icon:'🧾',name:'Regular Customer',giver:'auto',req:'errand_run',stars:2,stick:'🛍️',
+  brief:'The cashier knows your order!',
+  steps:[{t:'stat',k:'orders',n:3,txt:'Place 3 snack orders (total)'}]},
+ {id:'regular2',icon:'👜',name:'VIP Shopper',giver:'auto',req:'regular1',stars:3,stick:'👜',badge:'vip_shopper',
+  brief:'THE boss of the snack aisle.',
+  steps:[{t:'stat',k:'orders',n:6,txt:'Place 6 snack orders (total)'}]},
+ {id:'pump_pro',icon:'⛽',name:'Pump Patrol',giver:'auto',req:'charge_up',stars:2,stick:'⛽',
+  brief:'Every ride stays topped up!',
+  steps:[{t:'stat',k:'fuel',n:8,txt:'Fill up or charge 8 times (total)'}]},
+ {id:'tour1',icon:'🧭',name:'Township Tour',giver:'board',req:'maple1',stars:3,stick:'🧭',
+  brief:'Corner to corner, you know it all!',
+  steps:[
+   {t:'goto',x:-130,z:-64,r:10,txt:'Oak Lane west end'},
+   {t:'goto',x:130,z:-64,r:10,txt:'Oak Lane east end'},
+   {t:'goto',x:-130,z:64,r:10,txt:'Maple Drive west end'},
+   {t:'goto',x:130,z:64,r:10,txt:'Maple Drive east end'}]},
+ {id:'gnomes4',icon:'🍄',name:'Gnomes Move In',giver:'board',req:'gnomes3',stars:3,stick:'🏡',
+  brief:'New streets, new hiding spots!',
+  steps:[{t:'count',get:()=>Object.keys(Q.gnome||{}).length,n:15,txt:'Find all 15 gnomes'}]},
+ {id:'photo3',icon:'📸',name:'New Town Photographer',giver:'board',req:'photo2',stars:3,stick:'🖼️',badge:'photos12',
+  brief:'Fresh spots for your album!',
+  steps:[{t:'stat',k:'photoSpots',n:12,txt:'Photograph all 12 spots'}]},
+ {id:'litter2',icon:'🧹',name:'Sparkling Streets',giver:'board',req:'maple1',stars:2,stick:'✨',
+  brief:'New streets deserve to shine!',
+  steps:[{t:'ev',ev:'litter',n:4,txt:'Pick up 4 pieces of litter'}]},
+ {id:'race_oak',icon:'🚲',name:'Oak Lane Sprint',giver:'Jax',req:'race_hero',stars:3,stick:'🚲',
+  brief:'Jax thinks he is the fastest. Prove him wrong!',
+  steps:[{t:'race',race:'race_oak',txt:'Bike: stop sign to Oak west under 60s'}]},
+ {id:'race_maple',icon:'🚗',name:'Maple Dash',giver:'Jax',req:'race_oak',stars:3,stick:'🏎️',
+  brief:'Through the intersection, pedal down!',
+  steps:[{t:'race',race:'race_maple',txt:'Car: QuikTrip to Maple east under 42s'}]},
+ {id:'race_tour',icon:'🏆',name:'The Grand Tour',giver:'Jax',req:'race_maple',stars:4,stick:'🌍',badge:'grand_tourist',
+  brief:'The whole town in one giant lap!',
+  steps:[{t:'race',race:'race_tour',txt:'Car: home to Maple west under 85s'}]},
+ {id:'skill_bike1',icon:'🚴',name:'Bike Skill I',giver:'auto',req:'oak1',stars:1,stick:'🚲',
+  brief:'Training wheels? Never heard of them.',
+  steps:[{t:'ev',ev:'bikem',n:800,txt:'Ride your bike 800m'}]},
+ {id:'skill_bike2',icon:'🚵',name:'Bike Skill II',giver:'auto',req:'skill_bike1',stars:2,stick:'🚵',
+  brief:'Pedal power rising!',
+  steps:[{t:'ev',ev:'bikem',n:2500,txt:'Ride your bike 2,500m'}]},
+ {id:'skill_bike3',icon:'🏅',name:'Bike Skill III',giver:'auto',req:'skill_bike2',stars:3,stick:'🛞',badge:'bike_master',
+  brief:'Legendary legs of steel!',
+  steps:[{t:'ev',ev:'bikem',n:6000,txt:'Ride your bike 6,000m'}]},
+ {id:'skill_drive1',icon:'🚘',name:'Driver Skill I',giver:'auto',req:'oak1',stars:1,stick:'🚘',
+  brief:'Smooth and steady wins.',
+  steps:[{t:'ev',ev:'drivem',n:2000,txt:'Drive 2,000m'}]},
+ {id:'skill_drive2',icon:'🚙',name:'Driver Skill II',giver:'auto',req:'skill_drive1',stars:2,stick:'🚙',
+  brief:'Are you even old enough for this?!',
+  steps:[{t:'ev',ev:'drivem',n:6000,txt:'Drive 6,000m'}]},
+ {id:'skill_drive3',icon:'🏎️',name:'Driver Skill III',giver:'auto',req:'skill_drive2',stars:3,stick:'🗺️',badge:'drive_master',
+  brief:'Boss of every road in town.',
+  steps:[{t:'ev',ev:'drivem',n:15000,txt:'Drive 15,000m'}]},
+ {id:'skill_walk1',icon:'👟',name:'Walker Skill I',giver:'auto',req:'oak1',stars:1,stick:'👣',
+  brief:'Step by step by step!',
+  steps:[{t:'ev',ev:'walkm',n:800,txt:'Walk 800m'}]},
+ {id:'skill_walk2',icon:'🧦',name:'Walker Skill II',giver:'auto',req:'skill_walk1',stars:2,stick:'🧦',
+  brief:'Those shoes are earning it.',
+  steps:[{t:'ev',ev:'walkm',n:2500,txt:'Walk 2,500m'}]},
+ {id:'skill_walk3',icon:'🏔️',name:'Walker Skill III',giver:'auto',req:'skill_walk2',stars:3,stick:'🏔️',badge:'walk_master',
+  brief:'You could hike a mountain!',
+  steps:[{t:'ev',ev:'walkm',n:6000,txt:'Walk 6,000m'}]},
+ {id:'skill_hop1',icon:'🐸',name:'Bounce Skill I',giver:'auto',req:'oak1',stars:1,stick:'🟢',
+  brief:'Boing is a lifestyle.',
+  steps:[{t:'ev',ev:'jump',n:40,txt:'Jump 40 times'}]},
+ {id:'skill_hop2',icon:'🦘',name:'Bounce Skill II',giver:'auto',req:'skill_hop1',stars:2,stick:'🪀',
+  brief:'Higher! HIGHER!',
+  steps:[{t:'ev',ev:'jump',n:120,txt:'Jump 120 times'}]},
+ {id:'skill_hop3',icon:'🚀',name:'Bounce Skill III',giver:'auto',req:'skill_hop2',stars:3,stick:'🚀',badge:'hop_legend',
+  brief:'Basically zero gravity now.',
+  steps:[{t:'ev',ev:'jump',n:300,txt:'Jump 300 times'}]},
 ];
 const QBYID={};QUESTS.forEach(q=>QBYID[q.id]=q);
 /* chain "next" links for auto-offer flow */
@@ -243,6 +424,16 @@ const DAILIES=[
  {id:'d_shiny', icon:'🔮',txt:'Find the Shiny Pebble!', ev:'shiny', n:1},
  {id:'d_pond',  icon:'🦆',txt:'Visit the duck pond',    ev:'visit:pond',n:1},
  {id:'d_speed', icon:'💨',txt:'Zoom at top speed for 8s',ev:'speed', n:8},
+ {id:'d_sprk',  icon:'💦',txt:'Run through the sprinkler',ev:'sprinkler',n:1},
+ {id:'d_hops',  icon:'🦿',txt:'5 hopscotch bounces',    ev:'hopscotch',n:5},
+ {id:'d_lemon', icon:'🍋',txt:'Visit the lemonade stand',ev:'visit:lemon',n:1},
+ {id:'d_oak',   icon:'🌳',txt:'Visit Oak Lane',         ev:'visit:oak',n:1},
+ {id:'d_maple', icon:'🍁',txt:'Visit Maple Drive',      ev:'visit:maple',n:1},
+ {id:'d_kite',  icon:'🪁',txt:'Watch Rocket the kite',  ev:'visit:kite',n:1},
+ {id:'d_hi5',   icon:'🖐️',txt:'Say hi to 5 friends',ev:'greet',n:5},
+ {id:'d_boing10',icon:'🤸',txt:'10 trampoline bounces', ev:'boing',n:10},
+ {id:'d_bike8', icon:'🚴',txt:'Ride your bike 800m',    ev:'bikem',n:800},
+ {id:'d_soccer',icon:'⚽',txt:'Visit the soccer field',     ev:'visit:soccer',n:1},
 ];
 const DBYID={};DAILIES.forEach(d=>DBYID[d.id]=d);
 function hashStr(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return(h>>>0);}
@@ -298,9 +489,22 @@ const BADGES=[
  {id:'best_friend',icon:'🦴',name:'Best Friend',  t:()=>!!Q.done.tiny3},
  {id:'shutterbug',icon:'🌇',name:'Photo Pro',     t:()=>!!Q.done.photo2},
  {id:'treasure',  icon:'💎',name:'Treasure Master',t:()=>ST.coins>=30},
+ {id:'mayor',       icon:'🎖️',name:'Mayor',        t:()=>!!Q.done.mayor},
+ {id:'feather_friend',icon:'🪶',name:'Feather Friend', t:()=>!!Q.done.feathers2},
+ {id:'chalk_champ', icon:'💫',name:'Chalk Champ',      t:()=>!!Q.done.chalk2},
+ {id:'hop_master',  icon:'🎯',name:'Hopscotch Hero',   t:()=>!!Q.done.hops1},
+ {id:'delivery_pro',icon:'🚚',name:'Delivery Pro',     t:()=>!!Q.done.cookies3},
+ {id:'vip_shopper', icon:'👜',name:'VIP Shopper',      t:()=>!!Q.done.regular2},
+ {id:'grand_tourist',icon:'🏆',name:'Grand Tourist',   t:()=>!!Q.done.race_tour},
+ {id:'bike_master', icon:'🏅',name:'Bike Master',      t:()=>!!Q.done.skill_bike3},
+ {id:'drive_master',icon:'🏁',name:'Drive Master',     t:()=>!!Q.done.skill_drive3},
+ {id:'walk_master', icon:'🏔️',name:'Walk Master',t:()=>!!Q.done.skill_walk3},
+ {id:'hop_legend',  icon:'🚀',name:'Bounce Legend',    t:()=>!!Q.done.skill_hop3},
+ {id:'photos12',    icon:'📷',name:'Town Photographer',t:()=>ST.photoSpots>=12},
 ];
 const TITLES=[[0,'🌱 Rookie'],[6,'🧭 Explorer'],[14,'🤝 Helper'],
-              [24,'🌟 Super Helper'],[36,'🦸 Town Hero'],[55,'👑 Legend of Carter Town']];
+              [24,'🌟 Super Helper'],[36,'🦸 Town Hero'],[55,'👑 Legend of Carter Town'],
+              [85,'🌠 Mythic Kid'],[120,'🐉 Ultimate Legend']];
 function titleFor(s){let t=TITLES[0][1];for(const[m,n]of TITLES)if(s>=m)t=n;return t;}
 function nextTitle(s){for(const[m,n]of TITLES)if(s<m)return{need:m,name:n};return null;}
 function doneCount(){return Object.keys(Q.done).length;}
@@ -444,7 +648,7 @@ function giverMark(name,parent,y){
 }
 let boardMark=null;
 function initMarks(){
-  try{for(const n of NPCS)if(['Mr. Bob','Max','Lily','Miss Sue'].includes(n.name))giverMark(n.name,n.mesh,2.5);}catch(e){}
+  try{for(const n of NPCS)if(['Mr. Bob','Max','Lily','Miss Sue','Zoe','Nora','Sam','Jax','Ben','Coach Danny'].includes(n.name))giverMark(n.name,n.mesh,2.5);}catch(e){}
   const bg=new THREE.Group();bg.position.set(BOARD.x,2.7,BOARD.z);scene.add(bg);
   boardMark=giverMark('__board',bg,0);
 }
@@ -471,6 +675,7 @@ function stepNeed(s){
 function stepProg(q,i){
   const s=q.steps[i];
   if(s.t==='stat')return Math.min(stepNeed(s),Math.floor(ST[s.k]||0));
+  if(s.t==='count')return Math.min(stepNeed(s),(s.get?s.get():0)||0);
   if(s.t==='days')return Math.min(stepNeed(s),Object.keys(Q[s.k]||{}).length);
   return Math.min(stepNeed(s),(Q.p[q.id]||[])[i]||0);
 }
@@ -812,7 +1017,7 @@ function myCandidates(){
       Q.gnome[i]=1;qGroup.remove(m);delete gnomeMeshes[i];mark();
       snd('pop');pop(m.position.x,m.position.z,14);
       const found=Object.keys(Q.gnome).length;
-      toast('🍄 Gnome found '+GNOME_SPOTS[i][2]+'! ('+found+'/10)');
+      toast('🍄 Gnome found '+GNOME_SPOTS[i][2]+'! ('+found+'/'+GNOME_SPOTS.length+')');
       ev('gnome');
     }});
   }
@@ -1129,6 +1334,8 @@ function uiBadgeDot(){
   const anyAvail=QUESTS.some(q=>isAvail(q)&&(q.giver==='auto'));
   if(anyAvail&&doneCount()>0)qBtn.classList.add('qpulse');
 }
+
+window.QUEST_EV=ev;   // bridge: town-layer collectibles emit quest events
 
 /* ---------------- boot ---------------- */
 try{

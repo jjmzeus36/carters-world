@@ -911,6 +911,7 @@ function birdsUpdate(dt){
     const f=Math.sin(t*14+u.cx)*0.9;
     u.w1.rotation.z=f;u.w2.rotation.z=-f;
   }
+  if(window.TOWN_ANIMS)for(const fn of TOWN_ANIMS)fn(dt,t);
 }
 
 /* ---------------- ball, dog, coins ---------------- */
@@ -1019,6 +1020,18 @@ function npcUpdate(dt){
       P.legL.rotation.x=-Math.sin(n.ph)*sw*1.1;
       P.legR.rotation.x=Math.sin(n.ph)*sw*1.1;
     }
+    // life-like touches: look at Carter when he is near, wave hello on approach
+    const pd=dist2(px,pz,n.mesh.position.x,n.mesh.position.z);
+    if(P&&P.head){
+      if(pd<7*7&&!driving){
+        const want=clamp(angLerp(0,Math.atan2(px-n.mesh.position.x,pz-n.mesh.position.z)-n.mesh.rotation.y,1),-0.85,0.85);
+        P.head.rotation.y+=(want-P.head.rotation.y)*Math.min(1,dt*6);
+      }else{
+        P.head.rotation.y*=(1-Math.min(1,dt*4));
+      }
+    }
+    if(pd<4.5*4.5&&!n.greetedNear){n.greetedNear=true;if(n.wave<=0)n.wave=1.1;}
+    else if(pd>9*9)n.greetedNear=false;
     if(n.wave>0){
       n.wave-=dt;
       if(P)P.armR.rotation.x=-2.5+Math.sin(performance.now()/90)*0.4;

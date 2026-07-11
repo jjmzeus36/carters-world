@@ -64,7 +64,37 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - Interactions are now NEAREST-WINS (scanInteract builds candidates, sorts by distance) — the old
   fixed priority let a parked bike shadow the mailbox/door prompts.
 
+## Town expansion + quest wave 2 (July 11, 2026 — src/game_town.js)
+- **Oak Lane (z=-64) + Maple Drive (z=+64)**: baked road textures (bakeCrossStreet), 50 houseLite
+  homes in 4 rows (numbers 301-354/501-546, fictional), driveways + 8 parked cars, 2 hoops,
+  6 lamps, stop signs + street blades at both Hero intersections, +2 ambient traffic cars (5 total).
+- Props/life: lemonade stand (NO purchases — scenery+chat only), hopscotch pads ×2 (jump-landing
+  detector emits 'hopscotch'), chalk doodles, soccer field, balloon house (animated), sprinkler
+  (10 pooled droplets, emits 'sprinkler'), Sam's kite (anim + string line), 17 new NPCs
+  (kids playing tag/hopping + adults; Mr. Ortiz walks Peanut the chihuahua via attach).
+- Collectibles: 10 feathers + 8 chalk stars, one-shot, persisted in save.townc (additive top-level
+  key), pickups emit window.QUEST_EV('feather'/'chalk') — bridge exposed by game_quests.js.
+- NPC life in game_logic npcUpdate: heads (with hair/cap parented to the head mesh!) track Carter
+  within 7m; one-shot wave on approach. window.TOWN_ANIMS[] callbacks run inside birdsUpdate.
+- Build order is now core → town → logic → quests (town needs core symbols at load; quests wraps logic).
+- Quest wave 2 (appended INSIDE game_quests.js arrays): +41 quests (streets/meet-everyone/lemonade/
+  feathers/chalk/sprinkler/hopscotch/kite/soccer/balloon/cookie-delivery/QT-regulars/tour/gnomes4/
+  photo3/litter2/3 races/12 skill quests), +10 dailies, +12 badges, +2 titles (85/120⭐), +5 gnomes,
+  +6 shinies, +4 photo spots, +4 litter, 3 new RACES. Total ≈ 79 quests + 26 dailies ≈ 40h of play.
+  QT stays the spine: the whole wave gates on errand_run (the shop quest).
+- **New step kind t:'count'** (in stepProg): progress = a persisted-total getter, added because
+  ev-steps only count while a quest is ACTIVE — one-shot collectibles (feathers/chalk/gnomes)
+  would soft-lock forever if picked up early. gnomes1-4 + feather/chalk quests all use it now.
+
 ## Gotchas learned the hard way
+- **Stray lone commas in big array literals create sparse-array HOLES that node --check passes**
+  (elisions are legal JS): a hole in BADGES made checkBadges() throw every second and killed the
+  quest save-flush; a hole in DAILIES bricked ~1 in 9 daily rolls. When appending to the catalog
+  arrays, never leave a bare ',' line; verify with `ARR.includes(undefined)` in the console.
+- Quest ev-steps are SEQUENTIAL (only the current step counts events) — order greet lists the way
+  the kid will naturally walk them. Races' names MUST contain '→' (raceStart splits on it).
+- Sticker album is keyed by EMOJI, not quest id — every quest's stick emoji must be unique.
+- New quest-giver NPCs must be added to initMarks() list or they never get the ❗ marker.
 - index.html MUST keep `<meta charset="utf-8">` first in head.html — GitHub Pages sends a charset
   header but plain `python -m http.server` doesn't, and every emoji/star mojibakes without it.
 - rAF stops in hidden/background tabs — for headless/automation testing use the deterministic

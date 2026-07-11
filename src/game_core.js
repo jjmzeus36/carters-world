@@ -364,10 +364,10 @@ const heroTex=texCanvas(96,2048,c=>{
     g2.addColorStop(0,'rgba(0,0,0,0)');g2.addColorStop(0.5,'rgba(10,10,14,0.16)');g2.addColorStop(1,'rgba(0,0,0,0)');
     c.fillStyle=g2;c.fillRect((xo+5-0.8)*ux,0,1.6*ux,H);
   });
-  // dashes (skip |z|<8)
+  // dashes (skip the three intersections: Carter St + Oak Lane + Maple Drive)
   c.fillStyle='#E8C24A';
   for(let z=-148;z<148;z+=6){
-    if(Math.abs(z)<8)continue;
+    if(Math.abs(z)<8||Math.abs(z+64)<8||Math.abs(z-64)<8)continue;
     c.fillRect((5-0.14)*ux,(z+150)*vy,0.28*ux,2.2*vy);
   }
   // edge lines x=80±3.7 → local ±3.7 (skip |z|<5)
@@ -384,6 +384,15 @@ const heroTex=texCanvas(96,2048,c=>{
   c.fillRect((1.9-1.7+5)*ux,(7.8-0.25+150)*vy,3.4*ux,0.5*vy);
   c.fillRect((-1.9-1.7+5)*ux,(-7.8-0.25+150)*vy,3.4*ux,0.5*vy);
   bakeManhole(c,(0.9+5)*ux,(40+150)*vy,0.55*ux,0.55*vy);
+  // crosswalks flanking the Oak Lane + Maple Drive intersections
+  [-64,64].forEach(zc=>{
+    for(let i=0;i<7;i++){
+      const x=-3.6+i*1.2;
+      c.fillStyle='#e8e8e2';
+      c.fillRect((x+5-0.27)*ux,(zc-6.4-1.0+150)*vy,0.55*ux,2.0*vy);
+      c.fillRect((x+5-0.27)*ux,(zc+6.4-1.0+150)*vy,0.55*ux,2.0*vy);
+    }
+  });
 });
 const roadMat=new THREE.MeshLambertMaterial({map:carterTex});
 const roadMatB=new THREE.MeshLambertMaterial({map:heroTex});
@@ -453,6 +462,8 @@ flat(2,300,walkMatV,86.4,0,0.0295);
 }
 function onPavement(x,z){
   if(Math.abs(z)<=5.2&&Math.abs(x)<=150)return true;            // Carter Street
+  if(Math.abs(z+64)<=5.2&&Math.abs(x)<=150)return true;         // Oak Lane
+  if(Math.abs(z-64)<=5.2&&Math.abs(x)<=150)return true;         // Maple Drive
   if(Math.abs(x-80)<=6.2&&Math.abs(z)<=150)return true;         // Hero Way
   if(x>=90&&x<=144&&z>=-48&&z<=-10)return true;                 // QT lot
   if(x>=-54.5&&x<=-39.5&&z>=-13&&z<=-3.5)return true;           // driveway pad
@@ -967,7 +978,7 @@ function tree(x,z,s){
 [[-132,-10,1.2],[-90,-7.5,1],[-74,-7.5,0.9],[-34,-7.5,1.1],[-6,-7.5,1],[34,-7.5,0.95],[56,-7.5,1.15],
  [-96,8,1],[-58,8,0.9],[-26,8,1.05],[10,8,1],[52,8,1.1],[66,8,0.85],
  [-124,14,1.3],[-104,36,1.1],[-136,34,1],[92,6,1],[100,8,1.2],[130,4,0.9],
- [70,-40,1.2],[70,-70,1],[88,40,1.1],[74,70,1.2],[-60,-40,1.4],[-20,-44,1.2],[20,-40,1.3],[110,30,1.2],[140,-60,1.1]
+ [70,-40,1.2],[70,-74,1],[88,40,1.1],[74,71,1.2],[-60,-40,1.4],[-20,-36,1.2],[20,-40,1.3],[110,30,1.2],[146,-38,1.1]
 ].forEach(t=>tree(t[0],t[1],t[2]));
 /* hills ring (decor) */
 for(let i=0;i<14;i++){
@@ -1638,14 +1649,14 @@ function makePerson(o){
   const head=new THREE.Mesh(new THREE.BoxGeometry(0.58,0.58,0.58),
     [sm(skin),sm(skin),sm(skin),sm(skin),new THREE.MeshLambertMaterial({map:personFaceTex(skin)}),sm(skin)]);
   head.position.y=2.28;head.castShadow=true;g.add(head);
-  box(0.6,0.32,0.15,hair,0,2.3,-0.31,g);
+  box(0.6,0.32,0.15,hair,0,0.02,-0.31,head);
   if(o.cap){
-    box(0.62,0.15,0.62,o.cap,0,2.62,0,g);
-    box(0.6,0.1,0.24,o.cap,0,2.55,0.38,g);
+    box(0.62,0.15,0.62,o.cap,0,0.34,0,head);
+    box(0.6,0.1,0.24,o.cap,0,0.27,0.38,head);
   }else{
-    box(0.62,0.14,0.62,hair,0,2.6,0,g);
+    box(0.62,0.14,0.62,hair,0,0.32,0,head);
   }
-  if(o.pony)box(0.16,0.5,0.16,hair,0,2.08,-0.4,g);
+  if(o.pony)box(0.16,0.5,0.16,hair,0,-0.2,-0.4,head);
   parts.head=head;
   g.userData.parts=parts;
   if(o.scale)g.scale.setScalar(o.scale);
