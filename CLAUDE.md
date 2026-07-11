@@ -28,6 +28,28 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - **Order emails:** tryAutoEmail() POSTs to FormSubmit → hello@pebblevending.com. Activation is
   per-origin (one "Activate Form" click per new domain). Parent Zone rows show "✉️ emailed" on success.
 
+## v3 "quantum leap" upgrade (July 11, 2026, same day as v2)
+- **Filmic pipeline:** renderer.outputEncoding=sRGB + ACESFilmicToneMapping, exposure 1.28.
+  ALL hex colors are authored sRGB: mat() converts+flags at creation; a boot-time scene sweep
+  in game_logic converts every other material's color/emissive once (userData._lin guard).
+  Canvas textures get encoding=sRGBEncoding inside texCanvas. GLB materials are already
+  linear (glTF spec) and load after the sweep — never convert them. New lazily-created
+  colored materials MUST convertSRGBToLinear() themselves.
+- **Baked roads:** all markings (dashes, edge lines, zebras, stop bars, tire wear, manholes,
+  patches) live INSIDE carterTex/heroTex (world→pixel math in the bake fns) — killed ~140
+  paint quads. QT stalls = one overlay plane + oil-stain decals.
+- Shingle/siding grayscale detail maps tinted per house (roofMat/sideMat caches);
+  gable roofs (ExtrudeGeometry) on (num>>1)%2===0 houses, pyramid cones otherwise.
+- Power lines (merged one-draw LineSegments wires), pond + paddling ducks + scrolling water
+  (pondTex offset in birdsUpdate), gravel path, picnic table, backyard privacy fences
+  (WITH colliders at z=-30.5 and z=34 — coins/trampoline are inside them, by design),
+  trampoline at (24,-26) auto-boings the on-foot player (playerUpdate), butterflies on wing
+  pivots near flower beds, cloud ground-shadows tied to the cloud drift, brick wainscot +
+  reflective glass on QT, curbside bins/mailboxes/AC units per house.
+- **Dog is Tiny the chihuahua** (fawn + cream, giant ears, curled tail, yip bark). No Grandma
+  references anywhere (owner request 7/11).
+- Sky-dome horizon band == scene.fog color (0xcfe9f7 bright haze) or a seam shows.
+
 ## v2 "realistic town" upgrade (July 11, 2026)
 - Sky dome (gradient sphere + sun glow sprite, both fog:false, follow the player via skyGroup),
   textured grass/asphalt/sidewalks (canvas textures, RepeatWrapping), gutters + white edge lines,

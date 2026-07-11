@@ -192,8 +192,8 @@ $('fsBtn').addEventListener('click',()=>{
 /* ---------------- interactions ---------------- */
 const SHELF_ZONE={x:112.5,z:-41,r:4.6};
 const COUNTER_ZONE={x:124.6,z:-38,r:3.4};
-const MAIL_LINES=['📬 A postcard from Grandma!','📬 Pizza coupons! Score!','📬 A letter addressed to the coolest kid on Carter Street.','📬 Empty... the mail comes at 3pm!'];
-const DOOR_LINES=['🚪 Mom: "Hi sweetie! Back before dark!"','🚪 Somebody inside yells "BRING SNACKS!"','🚪 You hear the TV playing inside.','🚪 Mom: "Did you feed Buddy?"'];
+const MAIL_LINES=['📬 A new comic book came!','📬 Pizza coupons! Score!','📬 A letter addressed to the coolest kid on Carter Street.','📬 Empty... the mail comes at 3pm!'];
+const DOOR_LINES=['🚪 Mom: "Hi sweetie! Back before dark!"','🚪 Somebody inside yells "BRING SNACKS!"','🚪 You hear the TV playing inside.','🚪 Mom: "Did you feed Tiny?"'];
 let mailI=0,doorI=0;
 let curInteract=null;
 
@@ -235,7 +235,7 @@ function scanInteract(){
     }
     {
       const d=dist2(px,pz,dog.position.x,dog.position.z);
-      if(d<2.2*2.2)cand.push({d,label:'🐶 Pet Buddy',fn:()=>{sfx('bark');dogHop=2.6;burst(dog.position.x,1.2,dog.position.z,10);toast('🐶 Buddy loves you!');}});
+      if(d<2.2*2.2)cand.push({d,label:'🐶 Pet Tiny',fn:()=>{sfx('bark');dogHop=2.6;burst(dog.position.x,1.2,dog.position.z,10);toast('🐶 Tiny loves you!');}});
     }
     for(const n of NPCS){
       const d=dist2(px,pz,n.mesh.position.x,n.mesh.position.z);
@@ -696,6 +696,10 @@ function playerUpdate(dt){
   if(jumpQ){jumpQ=false;if(py<=0.01){pvy=7.2;sfx('jump');}}
   pvy-=20*dt;py+=pvy*dt;
   if(py<0){py=0;pvy=0;}
+  // trampoline: the mat is a bouncy floor at y=0.78
+  if(dist2(px,pz,TRAMP.x,TRAMP.z)<TRAMP.r*TRAMP.r&&py<=0.78&&pvy<=0){
+    py=0.78;pvy=11.5;sfx('jump');
+  }
   [px,pz]=collideCircle(px,pz,0.5);
   avatar.position.set(px,py,pz);
   avatar.rotation.y=pHeading;
@@ -802,7 +806,7 @@ for(let i=0;i<20;i++){
 function spawnPuff(x,z,gray){
   const p=puffPool[puffI++%puffPool.length];
   p.life=0.55;p.m.visible=true;
-  p.m.material.color.setHex(gray?0x9a9aa0:0xcbb98f);
+  p.m.material.color.setHex(gray?0x9a9aa0:0xcbb98f).convertSRGBToLinear();
   p.m.position.set(x+(Math.random()-0.5)*0.6,0.24,z+(Math.random()-0.5)*0.6);
   p.m.scale.setScalar(0.7+Math.random()*0.5);
   p.m.material.opacity=0.5;
@@ -887,6 +891,24 @@ function birdsUpdate(dt){
     b.rotation.y=Math.atan2(nx-b.position.x,nz-b.position.z);
     b.position.set(nx,u.y+Math.sin(t*0.7+u.r)*1.5,nz);
     const f=Math.sin(t*9+u.r)*0.55;
+    u.w1.rotation.z=f;u.w2.rotation.z=-f;
+  }
+  // pond life: scrolling water + paddling ducks
+  if(pondTex){pondTex.offset.x+=dt*0.016;pondTex.offset.y+=dt*0.009;}
+  for(const d of DUCKS){
+    const u=d.userData;
+    u.a+=u.sp*dt;
+    const nx=-109+Math.cos(u.a)*u.r,nz=18+Math.sin(u.a)*u.r;
+    d.rotation.y=Math.atan2(nx-d.position.x,nz-d.position.z);
+    d.position.set(nx,0.02+Math.sin(t*1.7+u.r)*0.04,nz);
+  }
+  // butterflies loop lazily around the flower beds
+  for(const b of BUTTERFLIES){
+    const u=b.userData;
+    u.a+=dt*(0.9+Math.sin(u.a*0.7)*0.3);
+    const nx=u.cx+Math.cos(u.a)*1.6,nz=u.cz+Math.sin(u.a*1.3)*1.2;
+    b.position.set(nx,0.6+Math.sin(t*2.2+u.cx)*0.25,nz);
+    const f=Math.sin(t*14+u.cx)*0.9;
     u.w1.rotation.z=f;u.w2.rotation.z=-f;
   }
 }
@@ -1094,6 +1116,8 @@ function envUpdate(dt){
   clouds.forEach((c,i)=>{
     c.position.x+=dt*(0.7+i*0.13);
     if(c.position.x>190)c.position.x=-190;
+    cloudShadows[i].position.x=c.position.x+6;
+    cloudShadows[i].position.z=c.position.z+4;
   });
   if(window._cashier){
     const c=window._cashier;
@@ -1198,6 +1222,20 @@ $('playBtn').addEventListener('click',()=>{
 $('rotateOk').addEventListener('click',()=>$('rotateHint').classList.add('hidden'));
 addEventListener('orientationchange',()=>{
   setTimeout(()=>{if(innerWidth>innerHeight)$('rotateHint').classList.add('hidden');},400);
+});
+
+/* one-time color-management sweep: every hand-authored material color/emissive is sRGB.
+   GLB vehicle materials load async AFTER this and are already linear per glTF spec — untouched. */
+scene.traverse(o=>{
+  if(o.isMesh||o.isSprite||o.isLine){
+    const ms=Array.isArray(o.material)?o.material:[o.material];
+    ms.forEach(m=>{
+      if(!m||(m.userData&&m.userData._lin))return;
+      if(m.color)m.color.convertSRGBToLinear();
+      if(m.emissive)m.emissive.convertSRGBToLinear();
+      m.userData._lin=1;
+    });
+  }
 });
 
 /* restore unopened deliveries as porch boxes */
