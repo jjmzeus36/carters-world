@@ -85,6 +85,26 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - Save key `cw_save_v3` in localStorage (per-origin). Bump the version to force fresh saves after
   economy/coin-layout changes (stale save.got indices corrupt new coin layouts).
 
+## Quests layer (v1, July 11 2026) — src/game_quests.js
+- **38 quests + 16 rotating dailies (3/day, date-seeded) + ~40 badges + sticker album +
+  6 rank titles** — story chains (Neighborhood Hero, Gnome Hunt, Duck Detective, races,
+  photo safari, Tiny arc), NPC side-quests with an offer dialog (❗ over givers), a Job
+  Board at (94,-10), 10 hidden gnomes, 8 photo spots, a daily Shiny Pebble, fetch items,
+  and 3 timed vehicle races. Sized for ~20 hours of play.
+- **HARD RULE HONORED: quests award NO coins ever** — stars ⭐/stickers/badges/titles only.
+  One early quest uses the normal shop loop once ("buy a snack"); dailies never require purchases.
+- **Additive-only install:** the file wraps `objUpdate` / `scanInteract` / `doInteract` /
+  `anyModal` / `closeModals` at load (it must stay LAST in build.sh's concat order). It
+  never edits game_core/game_logic. Interaction classify is emoji-prefix-based (👋🐶📬🚪⛽⚡) —
+  if those prompt labels change, quest counting degrades silently (no crash).
+- Save lives in `save.quests` (additive; NO SAVE_KEY bump needed — old saves upgrade in place).
+- Uses its own `new THREE.Clock()` so the deterministic test stepper drives it too.
+- Kill switch: `localStorage.setItem('cw_quests_off','1')` + reload disables the layer.
+- Base scanInteract wins the prompt unless it found nothing or the player is basically
+  standing on a quest object (<1.8m) — placed quest objects away from base interactables.
+- Smoke-tested end-to-end on localhost via the stepper: quest accept/complete/chain-auto-accept,
+  NPC offer dialog, gnome/photo/fetch/daily/mail flows, book modal (pauses sim), persistence.
+
 ## Asset credits
 - Cybertruck GLB by Mobolaji via poly.pizza (CC-BY 3.0, credited in Parent Zone).
 - Tesla Model 3 chassis from kelvinkoko/autonomous-driving-playground (GitHub LFS).
