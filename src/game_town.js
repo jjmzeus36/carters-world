@@ -257,25 +257,276 @@ const HOPSCOTCH=[{x:24,z:-58.6},{x:-24,z:58.6}];
     f.receiveShadow=false;
   });
 }
-/* soccer goal + field (Maple east) */
+/* ================= CARTER STADIUM — playable soccer! ================= */
+const PITCH={x:116,z:38,w:26,d:16};   // x 103..129, z 30..46 — right across from QuikTrip
+const SOCCER={goals:0,cd:0};
 {
-  const gp=new THREE.Group();gp.position.set(96,0,78);scene.add(gp);
-  box(0.09,1.6,0.09,0xf4f4ee,-1.8,0.8,0,gp);box(0.09,1.6,0.09,0xf4f4ee,1.8,0.8,0,gp);
-  box(3.7,0.09,0.09,0xf4f4ee,0,1.62,0,gp);
-  const netTex=texCanvas(64,64,c=>{
-    c.strokeStyle='rgba(240,240,240,0.7)';c.lineWidth=1.5;
-    for(let i=0;i<64;i+=8){c.beginPath();c.moveTo(i,0);c.lineTo(i,64);c.stroke();
-      c.beginPath();c.moveTo(0,i);c.lineTo(64,i);c.stroke();}
+  // striped pitch with real lines, baked in one texture
+  const pitchTex=texCanvas(512,320,c=>{
+    for(let i=0;i<8;i++){c.fillStyle=i%2?'#57a83c':'#63b848';c.fillRect(i*64,0,64,320);}
+    c.strokeStyle='rgba(250,250,250,0.92)';c.lineWidth=5;
+    c.strokeRect(10,10,492,300);
+    c.beginPath();c.moveTo(256,10);c.lineTo(256,310);c.stroke();
+    c.beginPath();c.arc(256,160,42,0,7);c.stroke();
+    c.fillStyle='rgba(250,250,250,0.92)';c.beginPath();c.arc(256,160,5,0,7);c.fill();
+    c.strokeRect(10,90,58,140);c.strokeRect(444,90,58,140);
+    c.beginPath();c.arc(88,160,5,0,7);c.fill();
+    c.beginPath();c.arc(424,160,5,0,7);c.fill();
   });
-  const net=new THREE.Mesh(new THREE.PlaneGeometry(3.6,1.55),
-    new THREE.MeshLambertMaterial({map:netTex,transparent:true,side:THREE.DoubleSide}));
-  net.position.set(0,0.8,-0.35);net.rotation.x=0.2;gp.add(net);
-  addCol(96,78,4,0.6);
-  paint2(96,74.5);
-  function paint2(x,z){
-    const f=flat(6,4,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.16}),x,z,0.014);
-    f.receiveShadow=false;
+  const pitch=flat(PITCH.w,PITCH.d,new THREE.MeshLambertMaterial({map:pitchTex}),PITCH.x,PITCH.z,0.016);
+  // goals with nets on both ends (open mouths face the pitch)
+  function makeGoal(gx,facing){
+    const gp=new THREE.Group();gp.position.set(gx,0,PITCH.z);gp.rotation.y=facing;scene.add(gp);
+    box(0.1,2.0,0.1,0xf4f4ee,0,1.0,-2.2,gp);
+    box(0.1,2.0,0.1,0xf4f4ee,0,1.0,2.2,gp);
+    box(0.1,0.1,4.5,0xf4f4ee,0,2.02,0,gp);
+    const netTex=texCanvas(64,64,c=>{
+      c.strokeStyle='rgba(240,240,240,0.65)';c.lineWidth=1.5;
+      for(let i=0;i<64;i+=7){c.beginPath();c.moveTo(i,0);c.lineTo(i,64);c.stroke();
+        c.beginPath();c.moveTo(0,i);c.lineTo(64,i);c.stroke();}
+    });
+    const netM=new THREE.MeshLambertMaterial({map:netTex,transparent:true,side:THREE.DoubleSide});
+    const back=new THREE.Mesh(new THREE.PlaneGeometry(4.4,1.9),netM);
+    back.position.set(-1.0,0.97,0);back.rotation.y=Math.PI/2;gp.add(back);
+    const top=new THREE.Mesh(new THREE.PlaneGeometry(1.0,4.4),netM);
+    top.position.set(-0.5,1.95,0);top.rotation.z=Math.PI/2;top.rotation.x=Math.PI/2;gp.add(top);
+    return gp;
   }
+  makeGoal(PITCH.x-PITCH.w/2+0.6,0);              // west goal (mouth faces east)
+  makeGoal(PITCH.x+PITCH.w/2-0.6,Math.PI);        // east goal (mouth faces west)
+  // low perimeter rails (with colliders) — gaps at both side entrances + both goal mouths
+  const railM=mat(0xf4f4ee);
+  function rail(cx,cz,w,d){
+    const r=new THREE.Mesh(new THREE.BoxGeometry(w,0.5,d),railM);
+    r.position.set(cx,0.25,cz);r.castShadow=true;scene.add(r);
+    addCol(cx,cz,w,d);
+  }
+  const L=PITCH.x-PITCH.w/2,R=PITCH.x+PITCH.w/2,T=PITCH.z-PITCH.d/2,B=PITCH.z+PITCH.d/2;
+  rail((L+PITCH.x-2)/2- .0,T,PITCH.x-2-L,0.25);rail((PITCH.x+2+R)/2,T,R-(PITCH.x+2),0.25); // north, entrance gap
+  rail((L+PITCH.x-2)/2,B,PITCH.x-2-L,0.25);rail((PITCH.x+2+R)/2,B,R-(PITCH.x+2),0.25);     // south, entrance gap
+  rail(L,(T+PITCH.z-2.4)/2,0.25,PITCH.z-2.4-T);rail(L,(PITCH.z+2.4+B)/2,0.25,B-(PITCH.z+2.4)); // west, goal mouth gap
+  rail(R,(T+PITCH.z-2.4)/2,0.25,PITCH.z-2.4-T);rail(R,(PITCH.z+2.4+B)/2,0.25,B-(PITCH.z+2.4)); // east, goal mouth gap
+  // corner flags
+  [[L,T],[R,T],[L,B],[R,B]].forEach(cf=>{
+    box(0.05,1.1,0.05,0xf4f4ee,cf[0],0.55,cf[1]);
+    const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.4,0.28),
+      new THREE.MeshLambertMaterial({color:0xe84a5f,side:THREE.DoubleSide}));
+    fl.material.color.convertSRGBToLinear();fl.material.userData._lin=1;
+    fl.position.set(cf[0]+0.22,1.0,cf[1]);scene.add(fl);
+  });
+  // the match ball
+  const b2mesh=new THREE.Mesh(new THREE.SphereGeometry(0.42,16,12),soccerBallMat);
+  b2mesh.castShadow=true;
+  scene.add(b2mesh);
+  const ball2={mesh:b2mesh,x:PITCH.x,y:0.42,z:PITCH.z,vx:0,vy:0,vz:0};
+  b2mesh.position.set(ball2.x,ball2.y,ball2.z);
+  window.EXTRA_BALLS=[ball2];
+  // goal detection + CELEBRATION
+  function goalParty(gx){
+    SOCCER.goals++;SOCCER.cd=2.2;
+    sfx('goal');
+    toast('\u26BD GOOOOAL!! That\u2019s '+SOCCER.goals+' this game!');
+    for(let i=0;i<3;i++)burst(gx,1.2+i*0.7,PITCH.z,26);
+    burst(ball2.x,1.5,ball2.z,20);
+    for(const n of NPCS){
+      if(dist2(n.mesh.position.x,n.mesh.position.z,PITCH.x,PITCH.z)<30*30)n.wave=2.2;
+    }
+    if(window.QUEST_EV)QUEST_EV('goal');
+  }
+  /* ------- stadium furniture: bleachers, benches, floodlights ------- */
+  {
+    for(let step=0;step<3;step++){
+      const b=new THREE.Mesh(new THREE.BoxGeometry(6,0.4,0.8),mat(0x9aa4b0));
+      b.position.set(105,0.2+step*0.42,27.2-step*0.8);b.castShadow=true;scene.add(b);
+    }
+    addCol(105,26.4,6.4,3);
+    [[110,48.6],[122,48.6]].forEach(bp=>{
+      box(2.2,0.12,0.6,0x8a5a2a,bp[0],0.55,bp[1]);
+      box(0.15,0.55,0.5,0x555555,bp[0]-0.8,0.28,bp[1]);
+      box(0.15,0.55,0.5,0x555555,bp[0]+0.8,0.28,bp[1]);
+      addCol(bp[0],bp[1],2.4,0.8);
+    });
+    streetLamp(101.5,28.3,Math.PI/4,true);
+    streetLamp(130.5,47.7,Math.PI+Math.PI/4,true);
+  }
+  /* ------- COME AND PLAY sign (the match starter) ------- */
+  window.SOCCER_SIGN={x:111,z:28.4};
+  {
+    const st=texCanvas(512,224,c=>{
+      c.fillStyle='#f7edd8';c.fillRect(0,0,512,224);
+      c.strokeStyle='#6b4a2a';c.lineWidth=14;c.strokeRect(7,7,498,210);
+      c.fillStyle='#1f7a3a';c.font='900 64px Verdana';c.textAlign='center';
+      c.fillText('\u26BD COME AND',256,84);
+      c.fillText('PLAY! \u26BD',256,150);
+      c.fillStyle='#20304A';c.font='700 30px Verdana';c.fillText('3v3 \u00B7 first to 3 goals',256,196);
+    });
+    box(0.18,2.0,0.18,0x6b4a2a,SOCCER_SIGN.x-2,1.0,SOCCER_SIGN.z);
+    box(0.18,2.0,0.18,0x6b4a2a,SOCCER_SIGN.x+2,1.0,SOCCER_SIGN.z);
+    const sg=signMesh(4.6,2.0,st);sg.position.set(SOCCER_SIGN.x,2.2,SOCCER_SIGN.z+0.08);scene.add(sg);
+    const sg2=signMesh(4.6,2.0,st);sg2.position.set(SOCCER_SIGN.x,2.2,SOCCER_SIGN.z-0.08);sg2.rotation.y=Math.PI;scene.add(sg2);
+    addCol(SOCCER_SIGN.x,SOCCER_SIGN.z,4.4,0.5);
+  }
+  /* ------- live scoreboard ------- */
+  const sbCanvas=document.createElement('canvas');sbCanvas.width=512;sbCanvas.height=128;
+  const sbTex=new THREE.CanvasTexture(sbCanvas);sbTex.encoding=THREE.sRGBEncoding;
+  function drawScore(us,them){
+    const c=sbCanvas.getContext('2d');
+    c.fillStyle='#16181c';c.fillRect(0,0,512,128);
+    c.strokeStyle='#1f7a3a';c.lineWidth=10;c.strokeRect(5,5,502,118);
+    c.fillStyle='#7fd4ff';c.font='900 25px Verdana';c.textAlign='center';
+    c.fillText("CARTER'S TEAM",122,46);c.fillText("CHIPPY'S CREW",390,46);
+    c.fillStyle='#ffd23e';c.font='900 62px Verdana';
+    c.fillText(us+' - '+them,256,92);
+    sbTex.needsUpdate=true;
+  }
+  drawScore(0,0);
+  {
+    box(0.15,3.4,0.15,0x3c424a,PITCH.x-2.6,1.7,T-1.2);
+    box(0.15,3.4,0.15,0x3c424a,PITCH.x+2.6,1.7,T-1.2);
+    const sb=new THREE.Mesh(new THREE.PlaneGeometry(5,1.25),
+      new THREE.MeshBasicMaterial({map:sbTex}));
+    sb.position.set(PITCH.x,3.2,T-1.14);scene.add(sb);
+    const sb2=new THREE.Mesh(new THREE.PlaneGeometry(5,1.25),
+      new THREE.MeshBasicMaterial({map:sbTex}));
+    sb2.position.set(PITCH.x,3.2,T-1.26);sb2.rotation.y=Math.PI;scene.add(sb2);
+    addCol(PITCH.x,T-1.2,5.4,0.5);
+  }
+  /* ------- the 3v3 match engine ------- */
+  window.SOCCER_MATCH={on:false,us:0,them:0};
+  const HOMES={Khoa:[110,34],Michael:[110,42],Chippy:[122,38],Amelia:[120,33],Holly:[120,43]};
+  const BENCH={Khoa:[105,29.2],Michael:[108,29.2],Chippy:[120,29.2],Amelia:[123,29.2],Holly:[126,29.2]};
+  function matchPlayers(){return NPCS.filter(n=>HOMES[n.name]);}
+  window.SOCCER_TOGGLE=function(){
+    const M=SOCCER_MATCH;
+    if(!M.on){
+      M.on=true;M.us=0;M.them=0;drawScore(0,0);
+      SOCCER.cd=0;
+      ball2.x=PITCH.x;ball2.z=PITCH.z;ball2.y=0.42;ball2.vx=ball2.vy=ball2.vz=0;
+      toast('\u26BD KICKOFF! Carter, Khoa & Michael vs Chippy\u2019s crew \u2014 first to 3!');
+      sfx('goal');
+      matchPlayers().forEach(n=>{n.kcd=0;});
+    }else{
+      M.on=false;
+      toast('\u26BD Match paused \u2014 come play again anytime!');
+      drawScore(0,0);
+    }
+  };
+  function endMatch(usWon){
+    SOCCER_MATCH.on=false;
+    if(usWon){
+      toast('🏆 CARTER\u2019S TEAM WINS THE MATCH!!');
+      sfx('goal');sfx('stage');
+      for(let i=0;i<5;i++)burst(PITCH.x-8+i*4,1.5+(i%2),PITCH.z,24);
+      if(window.QUEST_EV)QUEST_EV('match_win');
+    }else{
+      toast('😅 Chippy\u2019s crew takes this one \u2014 REMATCH?!');
+      sfx('ding');
+    }
+    for(const n of NPCS){
+      if(dist2(n.mesh.position.x,n.mesh.position.z,PITCH.x,PITCH.z)<32*32)n.wave=2.4;
+    }
+  }
+  /* AI: nearest teammate chases the ball, others hold formation; kick toward the goal */
+  TOWN_ANIMS.push((dt)=>{
+    const M=SOCCER_MATCH;
+    // goal reset / detection (shared for free play + matches)
+    if(SOCCER.cd>0){
+      SOCCER.cd-=dt;
+      if(SOCCER.cd<=0){
+        ball2.x=PITCH.x;ball2.z=PITCH.z;ball2.y=0.42;
+        ball2.vx=ball2.vy=ball2.vz=0;
+        if(!M.on)toast('\u26BD Ball is back on the center spot!');
+      }
+    }else if(Math.abs(ball2.z-PITCH.z)<2.2&&ball2.y<1.9){
+      if(ball2.x>R-1.4){          // EAST goal = Carter's team scores
+        SOCCER.goals++;SOCCER.cd=2.2;
+        sfx('goal');
+        for(let i=0;i<3;i++)burst(R-0.6,1.2+i*0.7,PITCH.z,26);
+        if(M.on){
+          M.us++;drawScore(M.us,M.them);
+          toast('\u26BD GOOOOAL!! '+M.us+' - '+M.them+'!');
+          if(window.QUEST_EV)QUEST_EV('goal');
+          if(M.us>=3)endMatch(true);
+        }else{
+          toast('\u26BD GOOOOAL!! That\u2019s '+SOCCER.goals+' this game!');
+          if(window.QUEST_EV)QUEST_EV('goal');
+          for(const n of NPCS){
+            if(dist2(n.mesh.position.x,n.mesh.position.z,PITCH.x,PITCH.z)<30*30)n.wave=2.2;
+          }
+        }
+      }else if(ball2.x<L+1.4){     // WEST goal
+        SOCCER.cd=2.2;
+        sfx('thud');
+        burst(L+0.6,1.4,PITCH.z,18);
+        if(M.on){
+          M.them++;drawScore(M.us,M.them);
+          toast('😱 Chippy\u2019s crew scores! '+M.us+' - '+M.them);
+          if(M.them>=3)endMatch(false);
+        }else{
+          SOCCER.goals++;
+          toast('\u26BD GOOOOAL!! That\u2019s '+SOCCER.goals+' this game!');
+          if(window.QUEST_EV)QUEST_EV('goal');
+        }
+      }
+    }
+    // player AI
+    const players=matchPlayers();
+    for(const n of players){
+      const isUs=(n.name==='Khoa'||n.name==='Michael');
+      let tx,tz,speed=isUs?3.1:3.35;
+      if(M.on&&SOCCER.cd<=0){
+        // nearest teammate to the ball chases it
+        let nearest=null,best=1e9;
+        for(const m of players){
+          if((m.name==='Khoa'||m.name==='Michael')!==isUs)continue;
+          const d=dist2(m.mesh.position.x,m.mesh.position.z,ball2.x,ball2.z);
+          if(d<best){best=d;nearest=m;}
+        }
+        if(n===nearest){tx=ball2.x;tz=ball2.z;}
+        else if(n.name==='Holly'){
+          // Holly plays keeper: shadows the ball along her goal line
+          tx=R-2.1;tz=clamp(ball2.z,PITCH.z-2.4,PITCH.z+2.4);speed=3.9;
+        }else if(n.name==='Amelia'&&ball2.x>PITCH.x-3){
+          // Amelia sweeps: cuts the lane between ball and goal
+          tx=(ball2.x+R-1)/2;tz=(ball2.z+PITCH.z)/2;speed=3.7;
+        }else{
+          const h=HOMES[n.name];
+          tx=h[0]+(ball2.x-PITCH.x)*0.35;tz=h[1]+(ball2.z-PITCH.z)*0.3;
+        }
+        tx=clamp(tx,L+1.6,R-1.6);tz=clamp(tz,T+1.2,B-1.2);
+      }else if(M.on){
+        const h=HOMES[n.name];tx=h[0];tz=h[1];  // kickoff formation
+      }else{
+        const b=BENCH[n.name];tx=b[0];tz=b[1];  // hang out at the sideline
+      }
+      const dx=tx-n.mesh.position.x,dz=tz-n.mesh.position.z;
+      const d=Math.hypot(dx,dz);
+      if(d>0.25){
+        n.mesh.position.x+=dx/d*Math.min(speed*dt,d);
+        n.mesh.position.z+=dz/d*Math.min(speed*dt,d);
+        n.mesh.rotation.y=angLerp(n.mesh.rotation.y,Math.atan2(dx,dz),1-Math.exp(-8*dt));
+        const P=n.mesh.userData.parts;
+        if(P){n.ph=(n.ph||0)+speed*3.4*dt;
+          if(!(n.wave>0)){P.armL.rotation.x=Math.sin(n.ph)*0.6;P.armR.rotation.x=-Math.sin(n.ph)*0.6;}
+          P.legL.rotation.x=-Math.sin(n.ph)*0.7;P.legR.rotation.x=Math.sin(n.ph)*0.7;}
+      }
+      // kick!
+      n.kcd=(n.kcd||0)-dt;
+      if(M.on&&SOCCER.cd<=0&&n.kcd<=0){
+        const bd=dist2(n.mesh.position.x,n.mesh.position.z,ball2.x,ball2.z);
+        if(bd<1.25*1.25){
+          n.kcd=0.7;
+          const defending=!isUs&&ball2.x>PITCH.x+5;
+          const gx=isUs?R:L,gz=PITCH.z+(Math.random()-0.5)*(defending?7:4.5);
+          let kx=gx-ball2.x,kz=gz-ball2.z;
+          const kl=Math.hypot(kx,kz)||1;
+          const pow=7.5+Math.random()*3;
+          ball2.vx=kx/kl*pow;ball2.vz=kz/kl*pow;ball2.vy=1.2+Math.random()*1.4;
+          sfx('pop');
+        }
+      }
+    }
+  });
 }
 /* balloon house (a birthday every day!) */
 {
@@ -459,10 +710,56 @@ addNPC({name:'Dr. Kim',x:80,z:100,type:'loop',cx:40,cz:90,r:38,speed:4.8,
 addNPC({name:'Ben',x:36,z:53,type:'hop',
   mesh:makePerson({shirt:0x2a7fd4,pants:0xd5232a,skin:0x8d5a3a,hair:0x1a120a,scale:0.58}),
   lines:['🎈 "It\'s my birthday!! Well... almost!"','🎈 "Balloons make EVERYTHING better!"','🎈 "Want some cake? It\'s pretend!"']});
-addNPC({name:'Coach Danny',x:96,z:73,type:'patrol',speed:1.6,pauseT:1.4,
-  pts:[[92,73],[100,73]],
+addNPC({name:'Coach Danny',x:112,z:47,type:'patrol',speed:1.6,pauseT:1.4,
+  pts:[[112,47],[120,47]],
   mesh:makePerson({shirt:0x3fa34d,pants:0x20242a,skin:0xc98a5e,hair:0x1f1408,cap:0x3fa34d}),
   lines:['⚽ "Practice makes progress, champ!"','⚽ "Best goal on this side of town!"','⚽ "You\'ve got great hustle, kid!"']});
 /* two more ambient cars for the new streets */
 addTraffic(0x2a9d8f,-100,OAK_Z+2,Math.PI/2,'x',1,-152,152);
 addTraffic(0xd4a017,100,MAPLE_Z-2,-Math.PI/2,'x',-1,-152,152);
+
+/* ---------------- the soccer kids: Carter's team + Chippy's crew ---------------- */
+addNPC({name:'Khoa',x:105,z:29.2,type:'idle',
+  mesh:makePerson({shirt:0x2e6fe0,pants:0x20304a,skin:0xe8c090,hair:0x111111,scale:0.62}),
+  lines:['\u26BD "Pass it! Pass it! PASS IT!"','\u26BD "Nice one, Carter!"','\u26BD "We totally got this!"']});
+addNPC({name:'Michael',x:108,z:29.2,type:'idle',
+  mesh:makePerson({shirt:0x2e6fe0,pants:0x2b3540,skin:0x8d5a3a,hair:0x1a120a,cap:0x2e6fe0,scale:0.63}),
+  lines:['\u26BD "Defense wins championships!"','\u26BD "I call the next goal!"','\u26BD "Team huddle, team huddle!"']});
+addNPC({name:'Chippy',x:120,z:29.2,type:'idle',
+  mesh:makePerson({shirt:0xd5232a,pants:0x20242a,skin:0xf0c8a0,hair:0x7a4a1e,cap:0xd5232a,scale:0.6}),
+  lines:['\u26BD "You can\u2019t beat MY crew!"','\u26BD "We\u2019re gonna win. Just saying."','\u26BD "Rematch. RIGHT NOW."']});
+addNPC({name:'Amelia',x:123,z:29.2,type:'idle',
+  mesh:makePerson({shirt:0xe86aa6,pants:0xd5232a,skin:0xd99a66,hair:0x2a1c10,pony:true,scale:0.6}),
+  lines:['\u26BD "Fastest feet in town, right here!"','\u26BD "Watch my left foot!"','\u26BD "Good luck \u2014 you\u2019ll need it!"']});
+addNPC({name:'Holly',x:126,z:29.2,type:'idle',
+  mesh:makePerson({shirt:0xff8c1a,pants:0x8a3fd1,skin:0xf0c8a0,hair:0xc9a227,pony:true,scale:0.58}),
+  lines:['\u26BD "Good game either way, okay?"','\u26BD "I never miss... mostly!"','\u26BD "This is the BEST pitch ever!"']});
+
+/* ---------------- floating name tags (find anyone at a glance) ---------------- */
+{
+  function tagTex(nm){
+    return texCanvas(256,64,c=>{
+      c.fillStyle='rgba(255,249,238,0.92)';
+      const w=Math.min(240,nm.length*22+34);
+      const x0=(256-w)/2;
+      c.beginPath();c.moveTo(x0+16,6);c.arcTo(x0+w,6,x0+w,58,16);c.arcTo(x0+w,58,x0,58,16);
+      c.arcTo(x0,58,x0,6,16);c.arcTo(x0,6,x0+w,6,16);c.closePath();c.fill();
+      c.strokeStyle='#20304A';c.lineWidth=4;c.stroke();
+      c.fillStyle='#20304A';c.font='900 30px Verdana';c.textAlign='center';c.textBaseline='middle';
+      c.fillText(nm,128,33);
+    });
+  }
+  for(const n of NPCS){
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tagTex(n.name),transparent:true,depthTest:false}));
+    const sc=(n.mesh.scale&&n.mesh.scale.x)||1;
+    spr.scale.set(2.6,0.65,1);
+    spr.position.y=(2.9*sc)+0.55;
+    spr.renderOrder=5;
+    n.mesh.add(spr);
+  }
+}
+/* twin runners start on opposite sides of their loops */
+{
+  const ruby=NPCS.find(n=>n.name==='Ruby');if(ruby)ruby.ang=Math.PI;
+  const eli=NPCS.find(n=>n.name==='Eli');if(eli)eli.ang=Math.PI;
+}

@@ -111,6 +111,7 @@ function sfx(n){
     case 'fill': blip(330,.5,'sine',.06,t,520);break;
     case 'bell': blip(1568,.12,'sine',.12,t);blip(1568,.14,'sine',.12,t+.16);break;
     case 'skid': blip(1150,.3,'sawtooth',.045,t,170);blip(760,.26,'sawtooth',.03,t+.03,130);break;
+    case 'goal': blip(523,.14,'triangle',.16,t);blip(659,.14,'triangle',.16,t+.11);blip(784,.14,'triangle',.16,t+.22);blip(1046,.4,'triangle',.2,t+.33);blip(1318,.5,'sine',.14,t+.42);blip(90,.2,'square',.14,t+.05,55);blip(90,.2,'square',.14,t+.25,55);break;
   }
 }
 function engineStart(){
@@ -978,7 +979,7 @@ function tree(x,z,s){
 [[-132,-10,1.2],[-90,-7.5,1],[-74,-7.5,0.9],[-34,-7.5,1.1],[-6,-7.5,1],[34,-7.5,0.95],[56,-7.5,1.15],
  [-96,8,1],[-58,8,0.9],[-26,8,1.05],[10,8,1],[52,8,1.1],[66,8,0.85],
  [-124,14,1.3],[-104,36,1.1],[-136,34,1],[92,6,1],[100,8,1.2],[130,4,0.9],
- [70,-40,1.2],[70,-74,1],[88,40,1.1],[74,71,1.2],[-60,-40,1.4],[-20,-36,1.2],[20,-40,1.3],[110,30,1.2],[146,-38,1.1]
+ [70,-40,1.2],[70,-74,1],[88,40,1.1],[74,71,1.2],[-60,-40,1.4],[-20,-36,1.2],[20,-40,1.3],[96,18,1.2],[146,-38,1.1]
 ].forEach(t=>tree(t[0],t[1],t[2]));
 /* hills ring (decor) */
 for(let i=0;i<14;i++){
@@ -1600,12 +1601,35 @@ const dog=makeDog();
 const DOG_HOME={x:-64.5,z:-10};
 dog.position.set(DOG_HOME.x,0,DOG_HOME.z);scene.add(dog);
 
-/* ---------------- soccer ball ---------------- */
-const ball={mesh:new THREE.Mesh(new THREE.SphereGeometry(0.42,12,10),
-  new THREE.MeshLambertMaterial({color:0xffffff})),
+/* ---------------- soccer ball (classic pentagon pattern) ---------------- */
+const soccerBallTex=texCanvas(256,128,c=>{
+  c.fillStyle='#f8f8f6';c.fillRect(0,0,256,128);
+  function penta(cx,cy,r,rot){
+    c.beginPath();
+    for(let i=0;i<5;i++){
+      const a=rot+i/5*Math.PI*2;
+      c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+    }
+    c.closePath();c.fillStyle='#16181c';c.fill();
+  }
+  // staggered pentagons (equirect wrap; edges tile at x=0/256)
+  const spots=[[0,32],[64,32],[128,32],[192,32],[256,32],
+               [32,96],[96,96],[160,96],[224,96]];
+  spots.forEach((p2,i)=>penta(p2[0],p2[1],13,i%2?0.3:0));
+  // faint seams
+  c.strokeStyle='rgba(60,60,66,0.35)';c.lineWidth=1.5;
+  spots.forEach(p2=>{
+    for(let i=0;i<5;i++){
+      const a=i/5*Math.PI*2+0.63;
+      c.beginPath();c.moveTo(p2[0]+Math.cos(a)*13,p2[1]+Math.sin(a)*13);
+      c.lineTo(p2[0]+Math.cos(a)*26,p2[1]+Math.sin(a)*26);c.stroke();
+    }
+  });
+});
+const soccerBallMat=new THREE.MeshLambertMaterial({map:soccerBallTex});
+const ball={mesh:new THREE.Mesh(new THREE.SphereGeometry(0.42,16,12),soccerBallMat),
   x:-67,y:0.42,z:-7,vx:0,vy:0,vz:0};
 ball.mesh.castShadow=true;
-const ballDot=box(0.2,0.2,0.2,0x20304A,0,0,0.36,ball.mesh);
 scene.add(ball.mesh);
 
 /* ---------------- townsfolk ---------------- */
@@ -1687,7 +1711,7 @@ addNPC({name:'Mr. Bob',x:-46,z:10.5,type:'patrol',speed:1.5,pauseT:1.2,
   pts:[[-46,10.5],[-34,10.5]],attach:makeMower(),
   mesh:makePerson({shirt:0x6b8e23,pants:0x4a3b2a,skin:0xe8b88a,cap:0xd9c06a}),
   lines:['👨‍🌾 "Howdy, Carter!"','👨‍🌾 "Lawn\'s lookin\' sharp today!"','👨‍🌾 "Nice ride out there, partner!"']});
-addNPC({name:'Max',x:-121,z:35,type:'loop',cx:-121,cz:28,r:7,speed:3.4,
+addNPC({name:'Max',x:-121,z:33,type:'loop',cx:-121,cz:28,r:5,speed:2.4,
   mesh:makePerson({shirt:0xff8c1a,pants:0x2b3540,skin:0xd99a66,hair:0x2a1c10,scale:0.62}),
   lines:['🏃 "Tag! You\'re it!"','🏃 "Betcha can\'t catch me!"','🏃 "Race you to the slide!"']});
 addNPC({name:'Lily',x:-117.5,z:26.5,type:'hop',

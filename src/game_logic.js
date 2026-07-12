@@ -252,6 +252,10 @@ function scanInteract(){
       const d=dist2(px,pz,HOME_DOOR.x,HOME_DOOR.z);
       if(d<2.6*2.6)cand.push({d,label:'🚪 Knock',fn:()=>{sfx('pop');toast(DOOR_LINES[doorI++%DOOR_LINES.length]);}});
     }
+    if(window.SOCCER_SIGN){
+      const d=dist2(px,pz,SOCCER_SIGN.x,SOCCER_SIGN.z);
+      if(d<3.4*3.4)cand.push({d,label:window.SOCCER_MATCH&&SOCCER_MATCH.on?'🏁 Pause the match':'\u26BD Come and play! (3v3)',fn:()=>window.SOCCER_TOGGLE()});
+    }
     if(cand.length){cand.sort((a,b)=>a.d-b.d);best=cand[0];}
   }
   curInteract=best;
@@ -778,13 +782,16 @@ function carUpdate(dt){
   }
   engineSet(carSpd);
   px=carX;pz=carZ;py=0;
-  // ball kick by vehicle
-  const bd=dist2(carX,carZ,ball.x,ball.z);
-  if(bd<(V.rad+0.6)*(V.rad+0.6)&&Math.abs(carSpd)>1){
-    const d=Math.sqrt(bd)||1;
-    ball.vx+=(ball.x-carX)/d*Math.abs(carSpd)*0.9;
-    ball.vz+=(ball.z-carZ)/d*Math.abs(carSpd)*0.9;
-    ball.vy=Math.min(Math.abs(carSpd)*0.35,6);
+  // ball kick by vehicle (home ball + any stadium balls)
+  const kickables=window.EXTRA_BALLS?[ball].concat(EXTRA_BALLS):[ball];
+  for(const b of kickables){
+    const bd=dist2(carX,carZ,b.x,b.z);
+    if(bd<(V.rad+0.6)*(V.rad+0.6)&&Math.abs(carSpd)>1){
+      const d=Math.sqrt(bd)||1;
+      b.vx+=(b.x-carX)/d*Math.abs(carSpd)*0.9;
+      b.vz+=(b.z-carZ)/d*Math.abs(carSpd)*0.9;
+      b.vy=Math.min(Math.abs(carSpd)*0.35,6);
+    }
   }
   $('speedo').textContent=Math.round(Math.abs(carSpd)*2.237)+' mph';
   if(!V.bike){
@@ -915,26 +922,30 @@ function birdsUpdate(dt){
 }
 
 /* ---------------- ball, dog, coins ---------------- */
-function ballUpdate(dt){
+function ballPhysics(b,dt){
   if(!driving){
-    const bd=dist2(px,pz,ball.x,ball.z);
+    const bd=dist2(px,pz,b.x,b.z);
     if(bd<1.05*1.05&&pSpeed>0.5){
       const d=Math.sqrt(bd)||1;
-      ball.vx+=(ball.x-px)/d*(1.5+pSpeed*0.9);
-      ball.vz+=(ball.z-pz)/d*(1.5+pSpeed*0.9);
-      ball.vy=2.2;sfx('pop');
+      b.vx+=(b.x-px)/d*(1.5+pSpeed*0.9);
+      b.vz+=(b.z-pz)/d*(1.5+pSpeed*0.9);
+      b.vy=2.2;sfx('pop');
     }
   }
-  ball.vy-=18*dt;
-  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;ball.z+=ball.vz*dt;
-  if(ball.y<0.42){ball.y=0.42;ball.vy*=-0.5;if(Math.abs(ball.vy)<0.8)ball.vy=0;
-    ball.vx*=(1-2.2*dt);ball.vz*=(1-2.2*dt);}
-  const bx=ball.x,bz=ball.z;
-  [ball.x,ball.z]=collideCircle(ball.x,ball.z,0.42);
-  if(ball.x!==bx)ball.vx*=-0.55;
-  if(ball.z!==bz)ball.vz*=-0.55;
-  ball.mesh.position.set(ball.x,ball.y,ball.z);
-  ball.mesh.rotation.x+=ball.vz*dt*2;ball.mesh.rotation.z-=ball.vx*dt*2;
+  b.vy-=18*dt;
+  b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;
+  if(b.y<0.42){b.y=0.42;b.vy*=-0.5;if(Math.abs(b.vy)<0.8)b.vy=0;
+    b.vx*=(1-2.2*dt);b.vz*=(1-2.2*dt);}
+  const bx=b.x,bz=b.z;
+  [b.x,b.z]=collideCircle(b.x,b.z,0.42);
+  if(b.x!==bx)b.vx*=-0.55;
+  if(b.z!==bz)b.vz*=-0.55;
+  b.mesh.position.set(b.x,b.y,b.z);
+  b.mesh.rotation.x+=b.vz*dt*2;b.mesh.rotation.z-=b.vx*dt*2;
+}
+function ballUpdate(dt){
+  ballPhysics(ball,dt);
+  if(window.EXTRA_BALLS)for(const b of EXTRA_BALLS)ballPhysics(b,dt);
 }
 let dogHop=0;
 function dogUpdate(dt){

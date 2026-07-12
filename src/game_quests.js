@@ -45,7 +45,7 @@ const POIS={
   maple: {x:36,  z:60,  r:11, name:'Maple Drive',    icon:'🍁'},
   lemon: {x:-72, z:-56.5,r:5, name:'the lemonade stand',icon:'🍋'},
   kite:  {x:-6,  z:-56, r:6,  name:"Sam's kite field",icon:'🪁'},
-  soccer:{x:96,  z:76,  r:7,  name:'the soccer field',icon:'⚽'},
+  soccer:{x:116, z:38,  r:12, name:'Carter Stadium', icon:'⚽'},
   balloon:{x:33, z:53,  r:6,  name:'the balloon house',icon:'🎈'},
 };
 const GNOME_SPOTS=[
@@ -55,7 +55,7 @@ const GNOME_SPOTS=[
   [-95,-28,'behind the west houses'],
   [-134,-58,'at the west end of Oak Lane'],[134,58,'at the east end of Maple Drive'],
   [-74,-54,'behind the lemonade stand'],[12,86,'in a Maple Drive backyard'],
-  [96,70,'near the soccer goal'],
+  [100.5,38,'near the soccer goal'],
 ];
 const SHINY_SPOTS=[[-51,-13],[104,5.4],[-129,21],[80,28],[128,-14],[-64,30],[16,-27],
   [-108,38],[97,-17],[-26,-5.4],[48,-38],[120,24],
@@ -72,7 +72,7 @@ const PHOTO_SPOTS=[
   {id:'oaksign',x:74.4,z:-57.6, name:'Oak Lane Sign', em:'🌳'},
   {id:'lemon', x:-70,  z:-54.5, name:'Lemonade Stand',em:'🍋'},
   {id:'balloon',x:33.5,z:54,    name:'Balloon House', em:'🎈'},
-  {id:'soccer',x:93.5, z:75,    name:'Soccer Goal',   em:'⚽'},
+  {id:'soccer',x:107,  z:32,    name:'Carter Stadium',em:'⚽'},
 ];
 const LITTER_SPOTS=[[100,-20],[85,12],[-60,5],[-115,25],[20,-5],[-60,-58.6],[24,58.6],[110,-58.6],[-110,58.6]];
 const BOARD={x:94,z:-10};
@@ -305,8 +305,20 @@ const QUESTS=[
  {id:'soccer1',icon:'⚽',name:'Goal Getter',giver:'Coach Danny',req:'maple1',stars:2,stick:'⚽',
   brief:'Coach Danny needs a striker!',
   steps:[
-   {t:'goto',x:96,z:76,r:7,txt:'Visit the soccer field'},
-   {t:'linger',x:96,z:76,r:8,secs:20,txt:'Practice with Coach 20s'}]},
+   {t:'goto',x:116,z:38,r:12,txt:'Visit Carter Stadium'},
+   {t:'linger',x:116,z:38,r:13,secs:20,txt:'Practice with Coach 20s'}]},
+ {id:'soccer2',icon:'🥅',name:'Hat Trick!',giver:'Coach Danny',req:'soccer1',stars:3,stick:'🥅',
+  brief:'Three goals. One legend. GO!',
+  steps:[{t:'ev',ev:'goal',n:3,txt:'Score 3 goals at Carter Stadium'}]},
+ {id:'soccer3',icon:'🌟',name:'Golden Boot',giver:'Coach Danny',req:'soccer2',stars:4,stick:'👞',badge:'golden_boot',
+  brief:'Coach says you might go pro!',
+  steps:[{t:'ev',ev:'goal',n:10,txt:'Score 10 more goals'}]},
+ {id:'match1',icon:'🏟️',name:'Match Day!',giver:'Coach Danny',req:'soccer1',stars:3,stick:'🏟️',
+  brief:'Khoa and Michael picked YOU. Beat Chippy’s crew!',
+  steps:[{t:'ev',ev:'match_win',n:1,txt:'Win a 3v3 match at Carter Stadium'}]},
+ {id:'match2',icon:'🥇',name:'Champions!',giver:'Coach Danny',req:'match1',stars:4,stick:'🥇',badge:'champs',
+  brief:'Three wins. A dynasty begins!',
+  steps:[{t:'ev',ev:'match_win',n:3,txt:'Win 3 matches (total while active)'}]},
  {id:'bday1',icon:'🎈',name:'Balloon Party',giver:'Ben',req:'maple1',stars:2,stick:'🎈',
   brief:'Ben celebrates every single day!',
   steps:[
@@ -433,7 +445,8 @@ const DAILIES=[
  {id:'d_hi5',   icon:'🖐️',txt:'Say hi to 5 friends',ev:'greet',n:5},
  {id:'d_boing10',icon:'🤸',txt:'10 trampoline bounces', ev:'boing',n:10},
  {id:'d_bike8', icon:'🚴',txt:'Ride your bike 800m',    ev:'bikem',n:800},
- {id:'d_soccer',icon:'⚽',txt:'Visit the soccer field',     ev:'visit:soccer',n:1},
+ {id:'d_soccer',icon:'⚽',txt:'Visit Carter Stadium',     ev:'visit:soccer',n:1},
+ {id:'d_goal',  icon:'🥅',txt:'Score a goal!',           ev:'goal',n:1},
 ];
 const DBYID={};DAILIES.forEach(d=>DBYID[d.id]=d);
 function hashStr(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return(h>>>0);}
@@ -501,6 +514,8 @@ const BADGES=[
  {id:'walk_master', icon:'🏔️',name:'Walk Master',t:()=>!!Q.done.skill_walk3},
  {id:'hop_legend',  icon:'🚀',name:'Bounce Legend',    t:()=>!!Q.done.skill_hop3},
  {id:'photos12',    icon:'📷',name:'Town Photographer',t:()=>ST.photoSpots>=12},
+ {id:'golden_boot', icon:'🥅',name:'Golden Boot',      t:()=>!!Q.done.soccer3},
+ {id:'champs',      icon:'🥇',name:'Stadium Champs',   t:()=>!!Q.done.match2},
 ];
 const TITLES=[[0,'🌱 Rookie'],[6,'🧭 Explorer'],[14,'🤝 Helper'],
               [24,'🌟 Super Helper'],[36,'🦸 Town Hero'],[55,'👑 Legend of Carter Town'],
