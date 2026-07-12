@@ -915,7 +915,7 @@ function questTick(){
           else{snd('pop');toast('✅ '+s.txt);}
         }
       }else if(Q.p[id][i])Q.p[id][i]=0; /* per-quest timer; leaving the zone resets */
-    }else if(s.t==='stat'||s.t==='days'){
+    }else if(s.t==='stat'||s.t==='days'||s.t==='count'){
       if(stepProg(q,i)>=stepNeed(s)){
         bumpToNeed(q,i);
         if(stepIdx(q)>=q.steps.length)complete(q);
@@ -1351,6 +1351,14 @@ function uiBadgeDot(){
 }
 
 window.QUEST_EV=ev;   // bridge: town-layer collectibles emit quest events
+/* gated test bridge: exposes quest internals for the deterministic autoplayer/regression
+   harness ONLY when localStorage.cw_debug is set. No effect in normal play. */
+try{if(localStorage.getItem('cw_debug'))window.__Q={
+  Q:Q,ST:ST,QUESTS:QUESTS,QBYID:QBYID,DAILIES:DAILIES,DBYID:DBYID,BADGES:BADGES,RACES:RACES,
+  POIS:POIS,GNOME_SPOTS:GNOME_SPOTS,SHINY_SPOTS:SHINY_SPOTS,PHOTO_SPOTS:PHOTO_SPOTS,
+  LITTER_SPOTS:LITTER_SPOTS,accept:accept,ev:ev,complete:complete,rollDaily:rollDaily,
+  stepIdx:stepIdx,stepProg:stepProg,stepNeed:stepNeed,isAvail:isAvail,titleFor:titleFor,
+  gnomeMeshes:gnomeMeshes,myCandidates:myCandidates,scanW:scanInteract};}catch(e){}
 
 /* ---------------- boot ---------------- */
 try{
