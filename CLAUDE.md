@@ -86,6 +86,23 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
   ev-steps only count while a quest is ACTIVE — one-shot collectibles (feathers/chalk/gnomes)
   would soft-lock forever if picked up early. gnomes1-4 + feather/chalk quests all use it now.
 
+## Carter Stadium (playable 3v3 soccer, July 11 2026 - in game_town.js)
+- Pitch at (116,38) 26x16, right across from QT. Baked striped pitch, two netted goals,
+  rails w/ colliders (gaps: side entrances + goal mouths), bleachers, benches, floodlights,
+  corner flags, LIVE canvas scoreboard, "COME AND PLAY!" sign = match toggle (scanInteract
+  candidate in game_logic, guarded on window.SOCCER_SIGN).
+- 3v3 match: Carter+Khoa+Michael (blue) vs Chippy+Amelia+Holly (Chippy's crew) - names are
+  Jesse-requested real first names (public repo: first names ONLY, nothing else). AI: nearest
+  teammate chases, others hold formation; Holly=keeper on the east goal line, Amelia=sweeper
+  (Jesse asked for better girls' defense). First to 3; a win emits QUEST_EV('match_win')
+  (quests match1/match2 + champs badge). East-goal scores emit 'goal'. Players are
+  type:'idle' NPCs (npcUpdate ignores them; the match AI drives positions directly).
+- Both soccer balls (home + stadium) share soccerBallMat (pentagon canvas texture).
+- Every NPC has a floating name-tag sprite (added at END of game_town.js after all addNPC
+  calls - new NPCs must be registered before that block or tagged manually).
+- JS string emoji: NEVER write python-style \U0001FXXXX escapes into JS source - JS renders
+  them as literal text (Jesse read 'U0001F631...' as 'UFC'). Use real emoji characters.
+
 ## Gotchas learned the hard way
 - **Stray lone commas in big array literals create sparse-array HOLES that node --check passes**
   (elisions are legal JS): a hole in BADGES made checkBadges() throw every second and killed the
