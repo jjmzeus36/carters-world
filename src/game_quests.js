@@ -587,8 +587,10 @@ function spawnPhotoSpots(){
 }
 const litterMeshes={};
 function refreshLitter(){
-  const active=!!Q.act.clean_town&&!Q.done.clean_town;
+  const cActive=!!Q.act.clean_town&&!Q.done.clean_town;
+  const l2Active=!!Q.act.litter2&&!Q.done.litter2;
   LITTER_SPOTS.forEach((s,i)=>{
+    const active=(i<5)?cActive:l2Active;   // spots 0-4 = Clean Team, 5-8 = Sparkling Streets
     const have=!!litterMeshes[i];
     const want=active&&!Q.litter[i];
     if(want&&!have){
