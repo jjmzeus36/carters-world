@@ -322,17 +322,6 @@ const SOCCER={goals:0,cd:0};
   b2mesh.position.set(ball2.x,ball2.y,ball2.z);
   window.EXTRA_BALLS=[ball2];
   // goal detection + CELEBRATION
-  function goalParty(gx){
-    SOCCER.goals++;SOCCER.cd=2.2;
-    sfx('goal');
-    toast('\u26BD GOOOOAL!! That\u2019s '+SOCCER.goals+' this game!');
-    for(let i=0;i<3;i++)burst(gx,1.2+i*0.7,PITCH.z,26);
-    burst(ball2.x,1.5,ball2.z,20);
-    for(const n of NPCS){
-      if(dist2(n.mesh.position.x,n.mesh.position.z,PITCH.x,PITCH.z)<30*30)n.wave=2.2;
-    }
-    if(window.QUEST_EV)QUEST_EV('goal');
-  }
   /* ------- stadium furniture: bleachers, benches, floodlights ------- */
   {
     for(let step=0;step<3;step++){
@@ -399,20 +388,23 @@ const SOCCER={goals:0,cd:0};
   window.SOCCER_TOGGLE=function(){
     const M=SOCCER_MATCH;
     if(!M.on){
-      M.on=true;M.us=0;M.them=0;drawScore(0,0);
-      SOCCER.cd=0;
+      M.on=true;
+      if(M.over||M.us===undefined){M.us=0;M.them=0;M.over=false;}
+      drawScore(M.us,M.them);
+      SOCCER.cd=1.6;   // short kickoff phase: players take formation first
       ball2.x=PITCH.x;ball2.z=PITCH.z;ball2.y=0.42;ball2.vx=ball2.vy=ball2.vz=0;
-      toast('\u26BD KICKOFF! Carter, Khoa & Michael vs Chippy\u2019s crew \u2014 first to 3!');
+      toast((M.us||M.them)?('\u26BD Back on! '+M.us+' - '+M.them+' \u2014 first to 3!')
+        :'\u26BD KICKOFF! Carter, Khoa & Michael vs Chippy\u2019s crew \u2014 first to 3!');
       sfx('goal');
       matchPlayers().forEach(n=>{n.kcd=0;});
     }else{
       M.on=false;
-      toast('\u26BD Match paused \u2014 come play again anytime!');
-      drawScore(0,0);
+      toast('\u26BD Match paused \u2014 the score is safe. Come back anytime!');
     }
   };
   function endMatch(usWon){
-    SOCCER_MATCH.on=false;
+    SOCCER_MATCH.on=false;SOCCER_MATCH.over=true;
+    drawScore(0,0);
     if(usWon){
       toast('🏆 CARTER\u2019S TEAM WINS THE MATCH!!');
       sfx('goal');sfx('stage');
@@ -438,7 +430,7 @@ const SOCCER={goals:0,cd:0};
         if(!M.on)toast('\u26BD Ball is back on the center spot!');
       }
     }else if(Math.abs(ball2.z-PITCH.z)<2.2&&ball2.y<1.9){
-      if(ball2.x>R-1.4){          // EAST goal = Carter's team scores
+      if(ball2.x>R-1.4&&ball2.x<R+2.0){   // EAST goal = Carter's team scores
         SOCCER.goals++;SOCCER.cd=2.2;
         sfx('goal');
         for(let i=0;i<3;i++)burst(R-0.6,1.2+i*0.7,PITCH.z,26);
@@ -454,7 +446,7 @@ const SOCCER={goals:0,cd:0};
             if(dist2(n.mesh.position.x,n.mesh.position.z,PITCH.x,PITCH.z)<30*30)n.wave=2.2;
           }
         }
-      }else if(ball2.x<L+1.4){     // WEST goal
+      }else if(ball2.x<L+1.4&&ball2.x>L-2.0){   // WEST goal
         SOCCER.cd=2.2;
         sfx('thud');
         burst(L+0.6,1.4,PITCH.z,18);
@@ -468,6 +460,12 @@ const SOCCER={goals:0,cd:0};
           if(window.QUEST_EV)QUEST_EV('goal');
         }
       }
+    }
+    // throw-in: if the match ball escapes the stadium, bring it back
+    if(M.on&&SOCCER.cd<=0){
+      const oob=ball2.x<L-2||ball2.x>R+2||ball2.z<T-2||ball2.z>B+2;
+      M.oobT=oob?(M.oobT||0)+dt:0;
+      if(M.oobT>2){M.oobT=0;SOCCER.cd=1.2;toast('\u26BD Throw-in! Back to the center spot.');}
     }
     // player AI
     const players=matchPlayers();
@@ -752,8 +750,8 @@ addNPC({name:'Holly',x:126,z:29.2,type:'idle',
   for(const n of NPCS){
     const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tagTex(n.name),transparent:true,depthTest:false}));
     const sc=(n.mesh.scale&&n.mesh.scale.x)||1;
-    spr.scale.set(2.6,0.65,1);
-    spr.position.y=(2.9*sc)+0.55;
+    spr.scale.set(2.6/sc,0.65/sc,1);       // counter the group scale: same size for kids + adults
+    spr.position.y=2.9+0.55/sc;
     spr.renderOrder=5;
     n.mesh.add(spr);
   }

@@ -72,7 +72,7 @@ const PHOTO_SPOTS=[
   {id:'oaksign',x:74.4,z:-57.6, name:'Oak Lane Sign', em:'🌳'},
   {id:'lemon', x:-70,  z:-54.5, name:'Lemonade Stand',em:'🍋'},
   {id:'balloon',x:33.5,z:54,    name:'Balloon House', em:'🎈'},
-  {id:'soccer',x:107,  z:32,    name:'Carter Stadium',em:'⚽'},
+  {id:'soccer',x:105.5,z:34,    name:'Carter Stadium',em:'⚽'},
 ];
 const LITTER_SPOTS=[[100,-20],[85,12],[-60,5],[-115,25],[20,-5],[-60,-58.6],[24,58.6],[110,-58.6],[-110,58.6]];
 const BOARD={x:94,z:-10};
@@ -359,7 +359,7 @@ const QUESTS=[
    {t:'goto',x:130,z:-64,r:10,txt:'Oak Lane east end'},
    {t:'goto',x:-130,z:64,r:10,txt:'Maple Drive west end'},
    {t:'goto',x:130,z:64,r:10,txt:'Maple Drive east end'}]},
- {id:'gnomes4',icon:'🍄',name:'Gnomes Move In',giver:'board',req:'gnomes3',stars:3,stick:'🏡',
+ {id:'gnomes4',icon:'🍄',name:'Gnomes Move In',giver:'board',req:'gnomes3',stars:3,stick:'🌻',
   brief:'New streets, new hiding spots!',
   steps:[{t:'count',get:()=>Object.keys(Q.gnome||{}).length,n:15,txt:'Find all 15 gnomes'}]},
  {id:'photo3',icon:'📸',name:'New Town Photographer',giver:'board',req:'photo2',stars:3,stick:'🖼️',badge:'photos12',
