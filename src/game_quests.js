@@ -1087,7 +1087,7 @@ function myCandidates(){
   /* race start on foot? (bike race needs the bike, hint) */
   const ra=raceStepActive();
   if(ra&&!race&&near(ra.r.from.x,ra.r.from.z,ra.r.from.r)&&!driving){
-    c.push({d:2.5,label:'🏁 Race start — bring '+(ra.r.veh==='bike'?'your bike!':'a car!'),fn:()=>{
+    c.push({d:5,label:'🏁 Race start — bring '+(ra.r.veh==='bike'?'your bike!':'a car!'),fn:()=>{
       toast('🏁 Come back '+(ra.r.veh==='bike'?'ON YOUR BIKE':'IN A CAR')+' to start!');}});
   }
   return c;
