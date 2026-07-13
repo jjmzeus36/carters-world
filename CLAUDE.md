@@ -19,8 +19,11 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - **PRIVACY: this repo is public.** The build is scrubbed: "Carter Street · Texas", house sign ★,
   CARTER TOWN. NEVER commit Carter's real street name, house number, or city. (The street is
   spelled K-E-E-N when it comes up in private contexts — voice transcripts often add a wrong 'e'.)
-- **Economy:** coins start at 0; exactly 30 on the map; NO bonuses, grants, quest coins, or daily
-  allowances — coins come only from map pickups.
+- **Economy (amended by Jesse 7/13/2026):** coins start at 20 (new saves; existing saves get a
+  ONE-TIME top-up to 20 via the save.grant20 flag — never re-applies after spending). Exactly 30
+  on the map; beyond the one-time start, NO bonuses, grants, quest coins, or daily allowances —
+  further coins come only from map pickups. Quest coin-counting is unaffected (it watches
+  save.got.length, not the wallet).
 - **Checkout ritual:** snack picker opens only at the shelves; payment happens only at the cashier
   counter ("Check out with the cashier!"). Card reads CARTER "THE BOSS" / ROOT HOME SERVICES LLC.
 - **No "Dad" text anywhere kid-visible.** Parent Zone is the 🔒 gate; its answer is 12
@@ -114,7 +117,9 @@ this repo, `index.html` at root). Custom domain carter.roothomeservices.com pend
 - New quest-giver NPCs must be added to initMarks() list or they never get the ❗ marker.
 - index.html MUST keep `<meta charset="utf-8">` first in head.html — GitHub Pages sends a charset
   header but plain `python -m http.server` doesn't, and every emoji/star mojibakes without it.
-- rAF stops in hidden/background tabs — for headless/automation testing use the deterministic
+- rAF stops in hidden/background tabs AND in occluded windows (another app covering Chrome
+  throttles it to zero — check window.__diag.frames advancing before trusting any live test) —
+  for headless/automation testing use the deterministic
   stepper: stub `window.requestAnimationFrame=()=>0`, stub `THREE.Clock.prototype.getDelta=()=>1/60`,
   call `tick()` in a loop, then restore both (window.__step pattern in the 7/11 test transcript).
   `keys.KeyX=true` + `doInteract()` from page-context eval drive the game fully.

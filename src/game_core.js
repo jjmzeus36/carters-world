@@ -12,9 +12,13 @@ const SAVE_KEY='cw_save_v3';
 let save=loadSave();
 function loadSave(){
   try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));
-    if(s&&s.v===3){s.inv=s.inv||{};s.orders=s.orders||[];s.got=s.got||[];return s;}
+    if(s&&s.v===3){s.inv=s.inv||{};s.orders=s.orders||[];s.got=s.got||[];
+      /* one-time starting allowance (owner decision 7/13/2026): top existing saves
+         up to 20 once. grant20 flag = never re-applies after spending. */
+      if(!s.grant20){s.grant20=1;s.coins=Math.max(s.coins||0,20);}
+      return s;}
   }catch(e){}
-  return {v:3,name:'Carter',shirt:'#2e6fe0',coins:0,inv:{},orders:[],got:[],stage:0,lastDaily:'',sound:true};
+  return {v:3,name:'Carter',shirt:'#2e6fe0',coins:20,grant20:1,inv:{},orders:[],got:[],stage:0,lastDaily:'',sound:true};
 }
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
 
