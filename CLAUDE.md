@@ -6,6 +6,19 @@ links to fulfill the order. Live at https://jjmzeus36.github.io/carters-world/ (
 this repo, `index.html` at root). Custom domain carter.roothomeservices.com pending one CNAME
 (carter → jjmzeus36.github.io, proxy off); when DNS exists, restore a `CNAME` file at repo root.
 
+## Fullscreen / installable app (PWA, added 7/13/2026)
+- `manifest.webmanifest` + `icon-180/192/512.png` at repo root; head.html links them
+  (rel=manifest, apple-touch-icon). display:fullscreen, orientation:landscape,
+  start_url/scope "." (relative — works on Pages AND localhost).
+- Install = the fullscreen answer on phones: iPhone Safari → Share → Add to Home Screen
+  (iOS has NO fullscreen API in-tab; the fsBtn toast says this). Android Chrome →
+  ⋮ menu → "Add to Home screen"/"Install app". Launching from the icon = zero browser UI.
+- GOTCHA: iOS home-screen apps get SEPARATE localStorage from the Safari/Chrome tab —
+  a save made in the tab does not carry into the installed app (fresh save starts there,
+  which now = 20 coins). Android installed PWAs share Chrome's storage.
+- No service worker (deliberate — no offline caching to fight on deploys; modern Chrome
+  installs fine without one).
+
 ## Build & deploy
 - Source lives in `src/` (head.html = CSS+DOM, game_core.js = world/builders/catalog,
   game_logic.js = input/sim/UI, plus vendored three.min.js, GLTFLoader.js, and base64 asset
